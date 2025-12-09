@@ -9,11 +9,10 @@ const validateEmail = (email: string) => {
   return emailRegex.test(email);
 };
 
-export default function LoginScreen() {
+export default function ForgotPasScreen() {
   const colorScheme = 'light';
   const router = useRouter();
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   const validateForm = () => {
@@ -23,12 +22,6 @@ export default function LoginScreen() {
       newErrors.email = 'Email không được để trống';
     } else if (!validateEmail(email)) {
       newErrors.email = 'Email không hợp lệ';
-    }
-
-    if (!password.trim()) {
-      newErrors.password = 'Mật khẩu không được để trống';
-    } else if (password.length < 6) {
-      newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
     }
 
     setErrors(newErrors);
@@ -45,10 +38,6 @@ export default function LoginScreen() {
   const handleSignUp = () => {
     router.push('/signup');
   };
-
-  const handleForgotPass = () => {
-    router.push('/forgotPass');
-  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme].background }]}>
@@ -87,35 +76,11 @@ export default function LoginScreen() {
             {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
           </View>
 
-          {/* Password Input */}
-          <View style={styles.inputWrapper}>
-            <Text style={[styles.label, { color: Colors[colorScheme].text }]}>Password</Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  borderColor: errors.password ? '#ff4444' : Colors[colorScheme].tabIconDefault,
-                  color: Colors[colorScheme].text,
-                  backgroundColor: Colors[colorScheme].tabIconDefault + '10',
-                },
-              ]}
-              placeholder="Nhập mật khẩu của bạn"
-              placeholderTextColor={Colors[colorScheme].tabIconDefault}
-              secureTextEntry
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                if (errors.password) setErrors({ ...errors, password: undefined });
-              }}
-            />
-            {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
-          </View>
-
           {/* Sign In Button */}
           <TouchableOpacity
             style={[styles.signInButton, { backgroundColor: Colors[colorScheme].tint }]}
             onPress={handleSignIn}>
-            <Text style={styles.signInButtonText}>Đăng nhập</Text>
+            <Text style={styles.signInButtonText}>Xác nhận</Text>
           </TouchableOpacity>
 
           {/* Divider */}
@@ -133,12 +98,6 @@ export default function LoginScreen() {
             <TouchableOpacity onPress={handleSignUp}>
               <Text style={[styles.signUpLink, { color: Colors[colorScheme].tint }]}>Đăng ký ngay</Text>
             </TouchableOpacity>
-            {/* Forgot Pass Link */}
-            <View style={styles.signUpContainer}>
-            <TouchableOpacity onPress={handleForgotPass}>
-              <Text style={[styles.signUpLink, { color: Colors[colorScheme].tint }]}>Quên mật khẩu</Text>
-            </TouchableOpacity>
-          </View>
           </View>
         </View>
       </ScrollView>
