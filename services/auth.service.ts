@@ -20,9 +20,10 @@ export interface LoginResponse {
 }
 
 export interface SignupRequest {
+  fullName: string;
+  username: string;
   email: string;
   password: string;
-  name: string;
   confirmPassword: string;
 }
 
@@ -58,9 +59,13 @@ class AuthService {
    */
   async signup(data: SignupRequest) {
     return apiService.post<LoginResponse>('/signup', {
+      fullName: data.fullName,
+      username: data.username,
       email: data.email,
       password: data.password,
-      name: data.name,
+      confirmPassword: data.confirmPassword,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
   }
 

@@ -1,7 +1,8 @@
 import { Colors } from '@/constants/theme';
+import { authService } from '@/services/auth.service';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 
 const validateEmail = (email: string) => {
@@ -12,13 +13,26 @@ const validateEmail = (email: string) => {
 export default function SignUpScreen() {
     const colorScheme = 'light';
     const router = useRouter();
+    const [fullName, setFullName] = useState('');
+    const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string }>({});
+    const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState<{ fullName?: string; username?: string; email?: string; password?: string; confirmPassword?: string }>({});
 
     const validateForm = () => {
-        const newErrors: { email?: string; password?: string; confirmPassword?: string } = {};
+        const newErrors: { fullName?: string; username?: string; email?: string; password?: string; confirmPassword?: string } = {};
+
+        if (!fullName.trim()) {
+            newErrors.fullName = 'Họ tên không được để trống';
+        }
+
+        if (!username.trim()) {
+            newErrors.username = 'Username không được để trống';
+        } else if (username.length < 3) {
+            newErrors.username = 'Username phải có ít nhất 3 ký tự';
+        }
 
         if (!email.trim()) {
             newErrors.email = 'Email không được để trống';
@@ -42,10 +56,29 @@ export default function SignUpScreen() {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSignUp = () => {
+    const handleSignUp = async () => {
         if (validateForm()) {
-            // Navigate to home after signup
-            router.replace('/(tabs)');
+            setLoading(true);
+            try {
+                const response = await authService.signup({
+                    fullName,
+                    username,
+                    email,
+                    password,
+                    confirmPassword,
+                });
+                
+                if (response.data) {
+                    Alert.alert('Thành công', 'Đăng ký tài khoản thành công!');
+                    router.replace('/(tabs)');
+                }
+            } catch (error: any) {
+                console.error('Signup error:', error);
+                const errorMessage = error?.response?.data?.message || error?.message || 'Đăng ký thất bại';
+                Alert.alert('Lỗi', errorMessage);
+            } finally {
+                setLoading(false);
+            }
         }
     };
     const handleSignIn = () => {
@@ -73,6 +106,52 @@ export default function SignUpScreen() {
 
                 {/* Form Container */}
                 <View style={styles.formContainer}>
+                    {/* Full Name Input */}
+                    <View style={styles.inputWrapper}>
+                        <Text style={[styles.label, { color: Colors[colorScheme].text }]}>Họ tên</Text>
+                        <TextInput
+                            style={[
+                                styles.input,
+                                {
+                                    borderColor: errors.fullName ? '#ff4444' : Colors[colorScheme].tabIconDefault,
+                                    color: Colors[colorScheme].text,
+                                    backgroundColor: Colors[colorScheme].tabIconDefault + '10',
+                                },
+                            ]}
+                            placeholder="Nhập họ tên của bạn"
+                            placeholderTextColor={Colors[colorScheme].tabIconDefault}
+                            value={fullName}
+                            onChangeText={(text) => {
+                                setFullName(text);
+                                if (errors.fullName) setErrors({ ...errors, fullName: undefined });
+                            }}
+                        />
+                        {errors.fullName && <Text style={styles.errorText}>{errors.fullName}</Text>}
+                    </View>
+
+                    {/* Username Input */}
+                    <View style={styles.inputWrapper}>
+                        <Text style={[styles.label, { color: Colors[colorScheme].text }]}>Username</Text>
+                        <TextInput
+                            style={[
+                                styles.input,
+                                {
+                                    borderColor: errors.username ? '#ff4444' : Colors[colorScheme].tabIconDefault,
+                                    color: Colors[colorScheme].text,
+                                    backgroundColor: Colors[colorScheme].tabIconDefault + '10',
+                                },
+                            ]}
+                            placeholder="Nhập username của bạn"
+                            placeholderTextColor={Colors[colorScheme].tabIconDefault}
+                            value={username}
+                            onChangeText={(text) => {
+                                setUsername(text);
+                                if (errors.username) setErrors({ ...errors, username: undefined });
+                            }}
+                        />
+                        {errors.username && <Text style={styles.errorText}>{errors.username}</Text>}
+                    </View>
+
                     {/* Email Input */}
                     <View style={styles.inputWrapper}>
                         <Text style={[styles.label, { color: Colors[colorScheme].text }]}>Email</Text>
@@ -147,9 +226,10 @@ export default function SignUpScreen() {
 
                     {/* Sign Up Button */}
                     <TouchableOpacity
-                        style={[styles.signUpButton, { backgroundColor: Colors[colorScheme].tint }]}
-                        onPress={handleSignUp}>
-                        <Text style={styles.signUpButtonText}>Đăng ký</Text>
+                        style={[styles.signUpButton, { backgroundColor: Colors[colorScheme].tint, opacity: loading ? 0.6 : 1 }]}
+                        onPress={handleSignUp}
+                        disabled={loading}>
+                        <Text style={styles.signUpButtonText}>{loading ? 'Đang đăng ký...' : 'Đăng ký'}</Text>
                     </TouchableOpacity>
 
                     <View style={styles.signInContainer}>
