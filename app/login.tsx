@@ -1,7 +1,8 @@
 import { Colors } from '@/constants/theme';
+import { authService } from '@/services/auth.service';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 
 const validateEmail = (email: string) => {
@@ -15,6 +16,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [loading, setLoading] = useState(false);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -35,10 +37,32 @@ export default function LoginScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
     if (validateForm()) {
-      // Navigate to home after login
-      router.replace('/(tabs)');
+      setLoading(true);
+      try {
+        const response = await authService.login({
+          email,
+          password,
+        });
+
+        console.log('🔐 Login Response:', { data: response.data, error: response.error, status: response.status });
+
+        if (response.data) {
+          // Đăng nhập thành công
+          console.log('✅ Login successful, token:', response.data.token);
+          router.replace('/(tabs)');
+        } else {
+          // Hiển thị lỗi từ API
+          console.log('❌ Login failed:', response.error);
+          Alert.alert('Lỗi đăng nhập', response.error || 'Email hoặc mật khẩu không chính xác');
+        }
+      } catch (error) {
+        Alert.alert('Lỗi', 'Có lỗi xảy ra, vui lòng thử lại');
+        console.error('Login error:', error);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -55,7 +79,7 @@ export default function LoginScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Logo */}
         <View style={styles.logoContainer}>
-            <Image source={require('@/assets/images/logo.png')} style={styles.logoImage} />
+          <Image source={require('@/assets/images/logo.png')} style={styles.logoImage} />
         </View>
 
         {/* Title */}
@@ -113,9 +137,14 @@ export default function LoginScreen() {
 
           {/* Sign In Button */}
           <TouchableOpacity
-            style={[styles.signInButton, { backgroundColor: Colors[colorScheme].tint }]}
-            onPress={handleSignIn}>
-            <Text style={styles.signInButtonText}>Đăng nhập</Text>
+            style={[styles.signInButton, { backgroundColor: Colors[colorScheme].tint, opacity: loading ? 0.6 : 1 }]}
+            onPress={handleSignIn}
+            disabled={loading}>
+            {loading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.signInButtonText}>Đăng nhập</Text>
+            )}
           </TouchableOpacity>
 
           {/* Divider */}
@@ -126,20 +155,27 @@ export default function LoginScreen() {
             </Text>
             <View style={[styles.divider, { backgroundColor: Colors[colorScheme].tabIconDefault }]} />
           </View>
-
           {/* Sign Up Link */}
           <View style={styles.signUpContainer}>
-            <Text style={[styles.signUpText, { color: Colors[colorScheme].text }]}>Chưa có tài khoản? </Text>
+            <Text style={[styles.signUpText, { color: Colors[colorScheme].text }]}>
+              Chưa có tài khoản?{" "}
+            </Text>
             <TouchableOpacity onPress={handleSignUp}>
-              <Text style={[styles.signUpLink, { color: Colors[colorScheme].tint }]}>Đăng ký ngay</Text>
+              <Text style={[styles.signUpLink, { color: Colors[colorScheme].tint }]}>
+                Đăng ký ngay
+              </Text>
             </TouchableOpacity>
-            {/* Forgot Pass Link */}
-            <View style={styles.signUpContainer}>
+          </View>
+
+          {/* Forgot Password */}
+          <View style={styles.forgotContainer}>
             <TouchableOpacity onPress={handleForgotPass}>
-              <Text style={[styles.signUpLink, { color: Colors[colorScheme].tint }]}>Quên mật khẩu</Text>
+              <Text style={[styles.signUpLink, { color: Colors[colorScheme].tint }]}>
+                Quên mật khẩu
+              </Text>
             </TouchableOpacity>
           </View>
-          </View>
+
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -250,5 +286,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
     marginBottom: 8,
+  },
+  forgotContainer: {
+    marginTop: 10,
+    alignItems: 'center',
   },
 });
