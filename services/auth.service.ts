@@ -42,7 +42,7 @@ class AuthService {
    * Đăng nhập
    */
   async login(credentials: LoginRequest) {
-    const response = await apiService.post<LoginResponse>('/login', {
+    const response = await apiService.post<LoginResponse>('/auth/login', {
       email: credentials.email,
       password: credentials.password,
     });
@@ -58,7 +58,7 @@ class AuthService {
    * Đăng ký
    */
   async signup(data: SignupRequest) {
-    return apiService.post<LoginResponse>('/signup', {
+    return apiService.post<LoginResponse>('/auth/signup', {
       fullName: data.fullName,
       username: data.username,
       email: data.email,
@@ -99,7 +99,7 @@ class AuthService {
    * Lấy thông tin user hiện tại
    */
   async getCurrentUser() {
-    return apiService.get('/me');
+    return apiService.get('/auth/users');
   }
 }
 

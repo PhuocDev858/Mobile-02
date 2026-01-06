@@ -4,7 +4,6 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Image, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-
 const validateEmail = (email: string) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
@@ -72,7 +71,7 @@ export default function LoginScreen() {
 
   const handleForgotPass = () => {
     router.push('/forgotPass');
-  }
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme].background }]}>
@@ -83,7 +82,7 @@ export default function LoginScreen() {
         </View>
 
         {/* Title */}
-        <Text style={[styles.title, { color: '#66ccff' }]}>HuuPhuoc's Manage System</Text>
+        <Text style={[styles.title, { color: '#66ccff' }]}>HuuPhuoc&apos;s Manage System</Text>
 
         {/* Form Container */}
         <View style={styles.formContainer}>
@@ -155,10 +154,11 @@ export default function LoginScreen() {
             </Text>
             <View style={[styles.divider, { backgroundColor: Colors[colorScheme].tabIconDefault }]} />
           </View>
+
           {/* Sign Up Link */}
           <View style={styles.signUpContainer}>
             <Text style={[styles.signUpText, { color: Colors[colorScheme].text }]}>
-              Chưa có tài khoản?{" "}
+              Chưa có tài khoản?{' '}
             </Text>
             <TouchableOpacity onPress={handleSignUp}>
               <Text style={[styles.signUpLink, { color: Colors[colorScheme].tint }]}>
@@ -175,7 +175,6 @@ export default function LoginScreen() {
               </Text>
             </TouchableOpacity>
           </View>
-
         </View>
       </ScrollView>
     </SafeAreaView>
