@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { FlatList, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Platform } from 'react-native';
+import { FlatList, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { useCart } from '@/context/CartContext';
 import { categories, products } from '@/data/products';
@@ -24,25 +24,10 @@ export default function HomeScreen() {
   const { getTotalItems } = useCart();
   const cartCount = getTotalItems();
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredProducts, setFilteredProducts] = useState(products);
 
   useEffect(() => {
     fetchUserData();
   }, []);
-
-  useEffect(() => {
-    // Filter products based on search query
-    if (searchQuery.trim() === '') {
-      setFilteredProducts(products);
-    } else {
-      const query = searchQuery.toLowerCase();
-      const filtered = products.filter((product) =>
-        product.name.toLowerCase().includes(query) ||
-        product.description.toLowerCase().includes(query)
-      );
-      setFilteredProducts(filtered);
-    }
-  }, [searchQuery]);
 
   const fetchUserData = async () => {
     try {
@@ -55,10 +40,13 @@ export default function HomeScreen() {
     }
   };
 
-  const handleLogout = () => {
-    // Clear user data and navigate back to login
-    setShowMenu(false);
-    router.replace('/login');
+  const handleSearchPress = () => {
+    if (searchQuery.trim()) {
+      router.push({
+        pathname: '/products',
+        params: { search: searchQuery }
+      });
+    }
   };
 
   const formatPrice = (price: number) => {
@@ -67,8 +55,6 @@ export default function HomeScreen() {
       currency: 'VND',
     }).format(price);
   };
-
-  const featuredProducts = searchQuery.trim() === '' ? products.slice(0, 4) : filteredProducts;
 
   return (
     <>
@@ -104,7 +90,14 @@ export default function HomeScreen() {
             style={styles.categoriesList}
           >
             {categories.map((category) => (
-              <TouchableOpacity key={category.id} style={styles.categoryCard}>
+              <TouchableOpacity 
+                key={category.id}
+                style={styles.categoryCard}
+                onPress={() => router.push({
+                  pathname: '/products',
+                  params: { category: category.id }
+                })}
+              >
                 <View style={styles.categoryIcon}>
                   <Text style={styles.categoryIconText}>{categoryIcons[category.icon]}</Text>
                 </View>
@@ -117,17 +110,13 @@ export default function HomeScreen() {
         {/* Featured Products Section */}
         <View style={styles.featuredSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>
-              {searchQuery.trim() === '' ? 'Sản phẩm nổi bật' : `Kết quả tìm kiếm (${filteredProducts.length})`}
-            </Text>
-            {searchQuery.trim() === '' && (
-              <TouchableOpacity>
-                <Text style={styles.viewAll}>Xem tất cả →</Text>
-              </TouchableOpacity>
-            )}
+            <Text style={styles.sectionTitle}>Sản phẩm nổi bật</Text>
+            <TouchableOpacity onPress={() => router.push('/products')}>
+              <Text style={styles.viewAll}>Xem tất cả →</Text>
+            </TouchableOpacity>
           </View>
           <FlatList
-            data={featuredProducts}
+            data={products.slice(0, 4)}
             keyExtractor={(item) => item.id}
             scrollEnabled={false}
             numColumns={2}
@@ -339,6 +328,52 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     textAlign: 'center',
     fontWeight: '500',
+  },
+  categoryCardActive: {
+    backgroundColor: '#1B6BCF',
+    borderRadius: 12,
+  },
+  categoryIconActive: {
+    backgroundColor: '#FFFFFF',
+  },
+  categoryNameActive: {
+    color: '#FFFFFF',
+  },
+  // Sort Section
+  sortSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#f5f5f5',
+    flexWrap: 'wrap',
+  },
+  sortLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#333',
+    marginRight: 4,
+  },
+  sortButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: 'white',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  sortButtonActive: {
+    backgroundColor: '#1B6BCF',
+    borderColor: '#1B6BCF',
+  },
+  sortButtonText: {
+    fontSize: 12,
+    color: '#333',
+    fontWeight: '500',
+  },
+  sortButtonTextActive: {
+    color: 'white',
   },
   // Featured Products Section
   featuredSection: {
