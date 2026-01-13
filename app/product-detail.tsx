@@ -1,14 +1,16 @@
-import React, { useState, useMemo } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { Colors } from '@/constants/theme';
+import { useCart } from '@/context/CartContext';
+import { products } from '@/data/products';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { products } from '@/data/products';
-import { Colors } from '@/constants/theme';
+import React, { useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function ProductDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const productId = params.productId as string;
+  const { addToCart } = useCart();
   
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
@@ -47,11 +49,12 @@ export default function ProductDetailScreen() {
   const handleAddToCart = async () => {
     setIsAdding(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Add to cart
+      addToCart(product, quantity);
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
+        setQuantity(1); // Reset quantity after adding
       }, 3000);
     } catch (error) {
       Alert.alert('Lỗi', 'Không thể thêm sản phẩm vào giỏ hàng');

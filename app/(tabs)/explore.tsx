@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, StyleSheet, TouchableOpacity } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { authService } from '@/services/auth.service';
 import { Colors } from '@/constants/theme';
+import { authService } from '@/services/auth.service';
 
 interface UserInfo {
   id?: string;
@@ -26,11 +26,16 @@ export default function AccountScreen() {
     try {
       setLoading(true);
       const response = await authService.getCurrentUser();
+      console.log('User data response:', response);
+      console.log('User data:', response.data);
       if (response.data) {
         setUserInfo(response.data);
+      } else {
+        console.warn('No user data in response');
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
+      Alert.alert('Lỗi', 'Không thể tải thông tin tài khoản');
     } finally {
       setLoading(false);
     }
@@ -80,7 +85,9 @@ export default function AccountScreen() {
             <ThemedText type="defaultSemiBold" style={styles.label}>
               Họ tên
             </ThemedText>
-            <ThemedText style={styles.value}>{userInfo.fullName || 'N/A'}</ThemedText>
+            <ThemedText style={styles.value}>
+              {userInfo.fullName || userInfo.name || 'N/A'}
+            </ThemedText>
           </ThemedView>
 
           <ThemedView style={styles.infoSection}>
@@ -108,7 +115,13 @@ export default function AccountScreen() {
         </ThemedView>
       ) : (
         <ThemedView style={styles.emptyContainer}>
-          <ThemedText>Không thể tải thông tin tài khoản</ThemedText>
+          <ThemedText>Không thể tải thông tin tài khoản. Vui lòng đăng nhập lại.</ThemedText>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={() => fetchUserData()}
+          >
+            <ThemedText style={styles.retryButtonText}>Thử lại</ThemedText>
+          </TouchableOpacity>
         </ThemedView>
       )}
     </ThemedView>
@@ -171,5 +184,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
+  },
+  retryButton: {
+    backgroundColor: Colors.light.tint,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    marginTop: 16,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

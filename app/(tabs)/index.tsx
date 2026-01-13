@@ -1,10 +1,11 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, ActivityIndicator, ScrollView, FlatList } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { FlatList, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Platform } from 'react-native';
 
-import { authService } from '@/services/auth.service';
+import { useCart } from '@/context/CartContext';
 import { categories, products } from '@/data/products';
+import { authService } from '@/services/auth.service';
 
 // Icon map for categories
 const categoryIcons: Record<string, string> = {
@@ -20,10 +21,28 @@ export default function HomeScreen() {
   const router = useRouter();
   const [showMenu, setShowMenu] = useState(false);
   const [user, setUser] = useState<{ username?: string; email?: string; name?: string } | null>(null);
+  const { getTotalItems } = useCart();
+  const cartCount = getTotalItems();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredProducts, setFilteredProducts] = useState(products);
 
   useEffect(() => {
     fetchUserData();
   }, []);
+
+  useEffect(() => {
+    // Filter products based on search query
+    if (searchQuery.trim() === '') {
+      setFilteredProducts(products);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = products.filter((product) =>
+        product.name.toLowerCase().includes(query) ||
+        product.description.toLowerCase().includes(query)
+      );
+      setFilteredProducts(filtered);
+    }
+  }, [searchQuery]);
 
   const fetchUserData = async () => {
     try {
@@ -49,35 +68,33 @@ export default function HomeScreen() {
     }).format(price);
   };
 
-  const featuredProducts = products.slice(0, 4);
+  const featuredProducts = searchQuery.trim() === '' ? products.slice(0, 4) : filteredProducts;
 
   return (
     <>
-      {/* User Header */}
+      {/* Header with Search Bar and Cart Icon */}
       <View style={styles.headerContainer}>
-        <View style={styles.spacer} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Tìm kiếm sản phẩm..."
+          placeholderTextColor="#999"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
         <TouchableOpacity 
-          style={styles.avatarButton}
-          onPress={() => setShowMenu(!showMenu)}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>U</Text>
-          </View>
+          style={styles.cartButton}
+          onPress={() => router.push('/(tabs)/cart')}>
+          <Text style={styles.cartIcon}>🛒</Text>
+          {cartCount > 0 && (
+            <View style={styles.cartBadge}>
+              <Text style={styles.cartBadgeText}>{cartCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
       {/* Main Content */}
       <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
-        {/* Hero Section */}
-        <View style={styles.heroSection}>
-          <Text style={styles.heroTitle}>Cửa hàng công nghệ hàng đầu Việt Nam</Text>
-          <Text style={styles.heroSubtitle}>
-            Khám phá những sản phẩm công nghệ mới nhất với giá tốt nhất. Chất lượng đảm bảo, giao hàng nhanh chóng.
-          </Text>
-          <TouchableOpacity style={styles.heroButton}>
-            <Text style={styles.heroButtonText}>Mua sắm ngay</Text>
-          </TouchableOpacity>
-        </View>
-
         {/* Categories Section */}
         <View style={styles.categoriesSection}>
           <Text style={styles.sectionTitle}>Danh mục sản phẩm</Text>
@@ -100,10 +117,14 @@ export default function HomeScreen() {
         {/* Featured Products Section */}
         <View style={styles.featuredSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Sản phẩm nổi bật</Text>
-            <TouchableOpacity>
-              <Text style={styles.viewAll}>Xem tất cả →</Text>
-            </TouchableOpacity>
+            <Text style={styles.sectionTitle}>
+              {searchQuery.trim() === '' ? 'Sản phẩm nổi bật' : `Kết quả tìm kiếm (${filteredProducts.length})`}
+            </Text>
+            {searchQuery.trim() === '' && (
+              <TouchableOpacity>
+                <Text style={styles.viewAll}>Xem tất cả →</Text>
+              </TouchableOpacity>
+            )}
           </View>
           <FlatList
             data={featuredProducts}
@@ -137,67 +158,7 @@ export default function HomeScreen() {
             )}
           />
         </View>
-
-        {/* Features Section */}
-        <View style={styles.featuresSection}>
-          <View style={styles.featureCard}>
-            <View style={styles.featureIcon}>
-              <Text style={styles.featureIconText}>✓</Text>
-            </View>
-            <Text style={styles.featureTitle}>Chính hãng 100%</Text>
-            <Text style={styles.featureText}>Cam kết sản phẩm chính hãng, bảo hành đầy đủ</Text>
-          </View>
-          
-          <View style={styles.featureCard}>
-            <View style={styles.featureIcon}>
-              <Text style={styles.featureIconText}>⚡</Text>
-            </View>
-            <Text style={styles.featureTitle}>Giao hàng nhanh</Text>
-            <Text style={styles.featureText}>Giao hàng toàn quốc, nhanh chóng trong 1-3 ngày</Text>
-          </View>
-          
-          <View style={styles.featureCard}>
-            <View style={styles.featureIcon}>
-              <Text style={styles.featureIconText}>💰</Text>
-            </View>
-            <Text style={styles.featureTitle}>Giá tốt nhất</Text>
-            <Text style={styles.featureText}>Cam kết giá tốt nhất thị trường, hoàn tiền nếu có chênh lệch</Text>
-          </View>
-        </View>
       </ScrollView>
-
-      {/* Dropdown Menu - Rendered outside ScrollView */}
-      {showMenu && (
-        <>
-          <TouchableOpacity 
-            style={styles.overlay}
-            onPress={() => setShowMenu(false)}
-            activeOpacity={1}
-          />
-          <View style={styles.menuContainer}>
-            <View style={styles.menu}>
-              {/* User Info Section */}
-              <View style={styles.userInfoSection}>
-                {user ? (
-                  <>
-                    <Text style={styles.usernameText}>{user.username || 'User'}</Text>
-                    <Text style={styles.emailText}>{user.email || ''}</Text>
-                  </>
-                ) : (
-                  <ActivityIndicator size="small" color="#1B6BCF" />
-                )}
-              </View>
-              <View style={styles.menuDivider} />
-              {/* Logout Option */}
-              <TouchableOpacity 
-                style={styles.menuItem}
-                onPress={handleLogout}>
-                <Text style={styles.menuItemText}>Đăng xuất</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </>
-      )}
     </>
   );
 }
@@ -206,33 +167,54 @@ const styles = StyleSheet.create({
   headerContainer: {
     position: 'relative',
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: Platform.OS === 'android' ? 20 : 12,
+    paddingBottom: 12,
+    paddingLeft: Platform.OS === 'android' ? 16 : 16,
     backgroundColor: '#f5f5f5',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+    gap: 8,
+    marginTop: Platform.OS === 'android' ? 16 : 0,
+  },
+  searchInput: {
+    flex: 1,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+    color: '#333',
   },
   spacer: {
     flex: 1,
   },
-  avatarButton: {
+  cartButton: {
     position: 'relative',
     zIndex: 10,
   },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#1B6BCF',
+  cartIcon: {
+    fontSize: 28,
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: '#EF4444',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarText: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  cartBadgeText: {
     color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   overlay: {
     position: 'absolute',
@@ -423,39 +405,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#1B6BCF',
-  },
-  // Features Section
-  featuresSection: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    gap: 12,
-  },
-  featureCard: {
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  featureIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#EFF6FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  featureIconText: {
-    fontSize: 24,
-  },
-  featureTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 4,
-  },
-  featureText: {
-    fontSize: 12,
-    color: '#6B7280',
-    textAlign: 'center',
-    lineHeight: 16,
   },
 });
