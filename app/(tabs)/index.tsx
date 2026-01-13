@@ -6,6 +6,16 @@ import { StyleSheet, Text, TouchableOpacity, View, ActivityIndicator, ScrollView
 import { authService } from '@/services/auth.service';
 import { categories, products } from '@/data/products';
 
+// Icon map for categories
+const categoryIcons: Record<string, string> = {
+  'Laptop': '💻',
+  'Smartphone': '📱',
+  'Tablet': '📑',
+  'Headphones': '🎧',
+  'Watch': '⌚',
+  'Camera': '📷',
+};
+
 export default function HomeScreen() {
   const router = useRouter();
   const [showMenu, setShowMenu] = useState(false);
@@ -79,8 +89,7 @@ export default function HomeScreen() {
             {categories.map((category) => (
               <TouchableOpacity key={category.id} style={styles.categoryCard}>
                 <View style={styles.categoryIcon}>
-                  {/* Icon placeholder - có thể thay bằng icon thực */}
-                  <Text style={styles.categoryIconText}>📦</Text>
+                  <Text style={styles.categoryIconText}>{categoryIcons[category.icon]}</Text>
                 </View>
                 <Text style={styles.categoryName}>{category.name}</Text>
               </TouchableOpacity>
@@ -103,7 +112,13 @@ export default function HomeScreen() {
             numColumns={2}
             columnWrapperStyle={styles.productGrid}
             renderItem={({ item }) => (
-              <TouchableOpacity style={styles.productCard}>
+              <TouchableOpacity 
+                style={styles.productCard}
+                onPress={() => router.push({
+                  pathname: '/product-detail',
+                  params: { productId: item.id }
+                })}
+              >
                 <Image
                   source={{ uri: item.image }}
                   style={styles.productImage}
