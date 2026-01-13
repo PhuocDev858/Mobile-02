@@ -23,6 +23,9 @@ export default function RootLayout() {
           <Stack.Screen name="forgotPass" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           <Stack.Screen name="product-detail" options={{ headerShown: false }} />
+          <Stack.Screen name="products" options={{ headerShown: false }} />
+          <Stack.Screen name="checkout" options={{ headerShown: false }} />
+          <Stack.Screen name="payment-info" options={{ headerShown: false }} />
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>

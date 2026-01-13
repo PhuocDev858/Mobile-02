@@ -75,6 +75,25 @@ export default function ProductsScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="🔍 Tìm kiếm sản phẩm..."
+          placeholderTextColor="#999"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        <TouchableOpacity style={styles.cartButton} onPress={() => router.push('/(tabs)/cart')}>
+          <Text style={styles.cartIcon}>🛒</Text>
+          {cartCount > 0 && (
+            <View style={styles.cartBadge}>
+              <Text style={styles.cartBadgeText}>{cartCount}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
+
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
         {/* Filter Section */}
         <View style={styles.filterSection}>
@@ -205,12 +224,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    paddingTop: 16,
+    paddingTop: 0,
   },
-  headerContainer: {
-    position: 'relative',
+  searchContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'android' ? 20 : 12,
@@ -220,12 +237,6 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e0e0e0',
     gap: 8,
     marginTop: Platform.OS === 'android' ? 16 : 0,
-  },
-  backButton: {
-    fontSize: 24,
-    color: '#1B6BCF',
-    fontWeight: 'bold',
-    paddingRight: 8,
   },
   searchInput: {
     flex: 1,
@@ -259,6 +270,26 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  headerContainer: {
+    position: 'relative',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'android' ? 20 : 12,
+    paddingBottom: 12,
+    backgroundColor: '#f5f5f5',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    gap: 8,
+    marginTop: Platform.OS === 'android' ? 16 : 0,
+  },
+  backButton: {
+    fontSize: 24,
+    color: '#1B6BCF',
+    fontWeight: 'bold',
+    paddingRight: 8,
   },
   scrollView: {
     flex: 1,

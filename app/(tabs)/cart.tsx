@@ -21,14 +21,8 @@ export default function CartScreen() {
       Alert.alert('Giỏ hàng trống', 'Vui lòng thêm sản phẩm trước khi thanh toán');
       return;
     }
-    Alert.alert('Thành công', 'Đơn hàng của bạn đã được đặt!', [
-      {
-        text: 'OK',
-        onPress: () => {
-          clearCart();
-        },
-      },
-    ]);
+    // Chuyển sang trang thanh toán
+    router.push('/checkout');
   };
 
   if (cartItems.length === 0) {
