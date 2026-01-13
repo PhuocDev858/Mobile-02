@@ -84,7 +84,7 @@ export default function ProductsScreen() {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-        <TouchableOpacity style={styles.cartButton} onPress={() => router.push('/(tabs)/cart')}>
+        <TouchableOpacity style={styles.cartButton} onPress={() => router.push('/cart')}>
           <Text style={styles.cartIcon}>🛒</Text>
           {cartCount > 0 && (
             <View style={styles.cartBadge}>

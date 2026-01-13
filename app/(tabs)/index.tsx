@@ -1,11 +1,24 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { FlatList, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { 
+  ActivityIndicator,
+  FlatList, 
+  Platform, 
+  ScrollView, 
+  StyleSheet, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  View,
+  RefreshControl,
+  Alert
+} from 'react-native';
 
 import { useCart } from '@/context/CartContext';
-import { categories, products } from '@/data/products';
+import { Product } from '@/data/products';
 import { authService } from '@/services/auth.service';
+import productService, { Category } from '@/services/product.service';
 
 // Icon map for categories
 const categoryIcons: Record<string, string> = {
@@ -24,10 +37,52 @@ export default function HomeScreen() {
   const { getTotalItems } = useCart();
   const cartCount = getTotalItems();
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // States cho dữ liệu từ API
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchUserData();
+    loadData();
   }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      // Gọi API song song
+      const [categoriesData, productsData] = await Promise.all([
+        productService.getCategories(),
+        productService.getFeaturedProducts(4)
+      ]);
+      
+      setCategories(categoriesData);
+      setFeaturedProducts(productsData);
+    } catch (error: any) {
+      console.error('Load data error:', error);
+      // Fallback: Sử dụng dữ liệu local khi API fail
+      const { categories: localCategories, products: localProducts } = await import('@/data/products');
+      setCategories(localCategories);
+      setFeaturedProducts(localProducts.slice(0, 4));
+      
+      // Thông báo cho user biết đang dùng dữ liệu offline
+      Alert.alert(
+        'Chế độ Offline', 
+        'Không thể kết nối server. Đang hiển thị dữ liệu mẫu.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
 
   const fetchUserData = async () => {
     try {
@@ -67,9 +122,9 @@ export default function HomeScreen() {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.cartButton}
-          onPress={() => router.push('/(tabs)/cart')}>
+          onPress={() => router.push('/cart')}>
           <Text style={styles.cartIcon}>🛒</Text>
           {cartCount > 0 && (
             <View style={styles.cartBadge}>
@@ -80,7 +135,23 @@ export default function HomeScreen() {
       </View>
 
       {/* Main Content */}
-      <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#1B6BCF" />
+          <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
+        </View>
+      ) : (
+        <ScrollView 
+          showsVerticalScrollIndicator={false} 
+          style={{ flex: 1 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#1B6BCF']}
+            />
+          }
+        >
         {/* Categories Section */}
         <View style={styles.categoriesSection}>
           <Text style={styles.sectionTitle}>Danh mục sản phẩm</Text>
@@ -115,44 +186,70 @@ export default function HomeScreen() {
               <Text style={styles.viewAll}>Xem tất cả →</Text>
             </TouchableOpacity>
           </View>
-          <FlatList
-            data={products.slice(0, 4)}
-            keyExtractor={(item) => item.id}
-            scrollEnabled={false}
-            numColumns={2}
-            columnWrapperStyle={styles.productGrid}
-            renderItem={({ item }) => (
-              <TouchableOpacity 
-                style={styles.productCard}
-                onPress={() => router.push({
-                  pathname: '/product-detail',
-                  params: { productId: item.id }
-                })}
-              >
-                <Image
-                  source={{ uri: item.image }}
-                  style={styles.productImage}
-                  contentFit="cover"
-                />
-                <View style={styles.productInfo}>
-                  <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
-                  <View style={styles.ratingRow}>
-                    <Text style={styles.starIcon}>★</Text>
-                    <Text style={styles.rating}>{item.rating}</Text>
-                    <Text style={styles.reviews}>({item.reviews})</Text>
+          {featuredProducts.length > 0 ? (
+            <FlatList
+              data={featuredProducts}
+              keyExtractor={(item) => item.id}
+              scrollEnabled={false}
+              numColumns={2}
+              columnWrapperStyle={styles.productGrid}
+              renderItem={({ item }) => (
+                <TouchableOpacity 
+                  style={styles.productCard}
+                  onPress={() => router.push({
+                    pathname: '/product-detail',
+                    params: { productId: item.id }
+                  })}
+                >
+                  <Image
+                    source={{ uri: item.image }}
+                    style={styles.productImage}
+                    contentFit="cover"
+                  />
+                  <View style={styles.productInfo}>
+                    <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
+                    <View style={styles.ratingRow}>
+                      <Text style={styles.starIcon}>★</Text>
+                      <Text style={styles.rating}>{item.rating}</Text>
+                      <Text style={styles.reviews}>({item.reviews})</Text>
+                    </View>
+                    <Text style={styles.price}>{formatPrice(item.price)}</Text>
                   </View>
-                  <Text style={styles.price}>{formatPrice(item.price)}</Text>
-                </View>
-              </TouchableOpacity>
-            )}
-          />
+                </TouchableOpacity>
+              )}
+            />
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>Chưa có sản phẩm nổi bật</Text>
+            </View>
+          )}
         </View>
       </ScrollView>
+      )}
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#666',
+  },
+  emptyContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#999',
+  },
   headerContainer: {
     position: 'relative',
     flexDirection: 'row',

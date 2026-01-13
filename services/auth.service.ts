@@ -73,7 +73,7 @@ class AuthService {
    * Quên mật khẩu
    */
   async forgotPassword(data: ForgotPasswordRequest) {
-    return apiService.post('/forgot-password', {
+    return apiService.post('/auth/forgot-password', {
       email: data.email,
     });
   }
@@ -82,9 +82,10 @@ class AuthService {
    * Đặt lại mật khẩu
    */
   async resetPassword(data: ResetPasswordRequest) {
-    return apiService.post('/reset-password', {
+    return apiService.post('/auth/reset-password', {
       token: data.token,
       password: data.password,
+      confirmPassword: data.confirmPassword,
     });
   }
 

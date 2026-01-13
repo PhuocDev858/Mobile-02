@@ -2,15 +2,15 @@ import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Clipboard,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Clipboard,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 import { useCart } from '@/context/CartContext';
@@ -129,7 +129,7 @@ export default function PaymentInfoScreen() {
           onPress: async () => {
             try {
               await paymentService.cancelOrder(orderId, 'Người dùng hủy thanh toán');
-              router.replace('/(tabs)/cart');
+              router.replace('/cart');
             } catch (error: any) {
               Alert.alert('Lỗi', 'Không thể hủy đơn hàng');
             }
