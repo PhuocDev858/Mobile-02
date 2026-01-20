@@ -4,7 +4,7 @@
  */
 
 import { CartItem } from '@/context/CartContext';
-import apiService from './api.service';
+import { apiService } from './api.service';
 
 export interface PaymentMethod {
   id: string;
@@ -86,7 +86,7 @@ class PaymentService {
         type: 'bank_transfer',
         icon: '🏦',
         bankCode: 'MB',
-        accountNumber: '1122334455',
+        accountNumber: '808080190705',
         accountName: 'CONG TY TNHH TECH STORE',
       },
       {

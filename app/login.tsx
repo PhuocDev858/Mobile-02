@@ -82,7 +82,7 @@ export default function LoginScreen() {
         </View>
 
         {/* Title */}
-        <Text style={[styles.title, { color: '#66ccff' }]}>HuuPhuoc&apos;s Manage System</Text>
+        <Text style={[styles.title, { color: '#66ccff' }]}>HuuPhuoc Tech Store</Text>
 
         {/* Form Container */}
         <View style={styles.formContainer}>

@@ -238,6 +238,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
+  scrollView: {
+    flex: 1,
+    paddingBottom: 120,
+  },
+  actionContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

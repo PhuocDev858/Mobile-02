@@ -68,13 +68,29 @@ export default function SignUpScreen() {
                     confirmPassword,
                 });
                 
+                console.log('Signup response:', response);
+                
                 if (response.data) {
                     Alert.alert('Thành công', 'Đăng ký tài khoản thành công!');
                     router.replace('/(tabs)');
+                } else if (response.error) {
+                    // Hiển thị lỗi từ backend
+                    const errorMessage = response.error;
+                    Alert.alert('Lỗi đăng ký', errorMessage);
                 }
             } catch (error: any) {
                 console.error('Signup error:', error);
-                const errorMessage = error?.response?.data?.message || error?.message || 'Đăng ký thất bại';
+                // Xử lý lỗi từ API response
+                let errorMessage = 'Đăng ký thất bại. Vui lòng thử lại.';
+                
+                if (error?.message?.includes('email')) {
+                    errorMessage = 'Email đã được sử dụng. Vui lòng sử dụng email khác.';
+                } else if (error?.message?.includes('username')) {
+                    errorMessage = 'Username đã được sử dụng. Vui lòng sử dụng username khác.';
+                } else {
+                    errorMessage = error?.message || errorMessage;
+                }
+                
                 Alert.alert('Lỗi', errorMessage);
             } finally {
                 setLoading(false);

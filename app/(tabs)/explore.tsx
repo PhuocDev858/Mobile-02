@@ -26,15 +26,15 @@ export default function AccountScreen() {
     try {
       setLoading(true);
       const response = await authService.getCurrentUser();
-      console.log('User data response:', response);
-      console.log('User data:', response.data);
-      if (response.data) {
-        setUserInfo(response.data);
-      } else {
-        console.warn('No user data in response');
+      
+      // Check if response has nested data structure
+      const userData = response.data?.data || response.data || response;
+      
+      if (userData) {
+        setUserInfo(userData);
       }
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      console.error('Error fetching user data');
       Alert.alert('Lỗi', 'Không thể tải thông tin tài khoản');
     } finally {
       setLoading(false);
@@ -55,9 +55,13 @@ export default function AccountScreen() {
           text: 'Đăng xuất',
           onPress: async () => {
             try {
+              console.log('Logging out...');
               await authService.logout();
+              console.log('Token removed, navigating to login...');
               router.replace('/login');
+              console.log('Navigation completed');
             } catch (error) {
+              console.error('Logout error:', error);
               Alert.alert('Lỗi', 'Không thể đăng xuất');
             }
           },

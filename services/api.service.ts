@@ -26,7 +26,7 @@ class ApiService {
   /**
    * Lấy token từ localStorage
    */
-  private async getToken(): Promise<string | null> {
+  private async getTokenFromStorage(): Promise<string | null> {
     try {
       return await AsyncStorage.getItem('auth_token');
     } catch (error) {
@@ -39,7 +39,7 @@ class ApiService {
    * Chuẩn bị headers cho request
    */
   private async prepareHeaders(customHeaders?: Record<string, string>) {
-    const token = await this.getToken();
+    const token = await this.getTokenFromStorage();
     const headers: Record<string, string> = {
       ...API_CONFIG.HEADERS,
       ...customHeaders,
@@ -47,6 +47,9 @@ class ApiService {
 
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
+      console.log('📤 Request with token:', token.substring(0, 20) + '...');
+    } else {
+      console.log('⚠️ No token found for request');
     }
 
     return headers;
@@ -176,6 +179,13 @@ class ApiService {
     } catch (error) {
       console.error('Error saving token:', error);
     }
+  }
+
+  /**
+   * Lấy token (public method for debugging)
+   */
+  async getToken() {
+    return this.getTokenFromStorage();
   }
 
   /**

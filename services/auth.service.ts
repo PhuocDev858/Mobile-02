@@ -47,8 +47,17 @@ class AuthService {
       password: credentials.password,
     });
 
-    if (response.data?.token) {
-      await apiService.setToken(response.data.token);
+    console.log('Login response:', response);
+    // Token có thể nằm ở response.data.token hoặc response.data.data.token
+    const token = response.data?.token || (response.data as any)?.data?.token;
+    
+    if (token) {
+      console.log('Saving token:', token.substring(0, 30) + '...');
+      await apiService.setToken(token);
+      const savedToken = await apiService.getToken();
+      console.log('Token saved successfully:', savedToken ? 'Yes' : 'No');
+    } else {
+      console.log('No token in response');
     }
 
     return response;
@@ -100,7 +109,7 @@ class AuthService {
    * Lấy thông tin user hiện tại
    */
   async getCurrentUser() {
-    return apiService.get('/auth/users');
+    return apiService.get('/auth/me');
   }
 }
 
