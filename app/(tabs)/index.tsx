@@ -22,12 +22,14 @@ import productService, { Category } from '@/services/product.service';
 
 // Icon map for categories
 const categoryIcons: Record<string, string> = {
-  'Laptop': '💻',
-  'Smartphone': '📱',
-  'Tablet': '📑',
+  'Smartphones': '📱',
+  'Tablets': '📱',
+  'Laptops': '💻',
   'Headphones': '🎧',
-  'Watch': '⌚',
-  'Camera': '📷',
+  'Smartwatches': '⌚',
+  'Accessories': '🔌',
+  'Cameras': '📷',
+  'Gaming': '🎮',
 };
 
 export default function HomeScreen() {
@@ -58,6 +60,7 @@ export default function HomeScreen() {
         productService.getFeaturedProducts(4)
       ]);
       
+      console.log('Categories data:', JSON.stringify(categoriesData, null, 2));
       setCategories(categoriesData);
       setFeaturedProducts(productsData);
     } catch (error: any) {
@@ -170,7 +173,7 @@ export default function HomeScreen() {
                 })}
               >
                 <View style={styles.categoryIcon}>
-                  <Text style={styles.categoryIconText}>{categoryIcons[category.icon]}</Text>
+                  <Text style={styles.categoryIconText}>{categoryIcons[category.name] || '📦'}</Text>
                 </View>
                 <Text style={styles.categoryName}>{category.name}</Text>
               </TouchableOpacity>
@@ -193,7 +196,9 @@ export default function HomeScreen() {
               scrollEnabled={false}
               numColumns={2}
               columnWrapperStyle={styles.productGrid}
-              renderItem={({ item }) => (
+              renderItem={({ item }) => {
+                const productItem = item as any;
+                return (
                 <TouchableOpacity 
                   style={styles.productCard}
                   onPress={() => router.push({
@@ -202,7 +207,7 @@ export default function HomeScreen() {
                   })}
                 >
                   <Image
-                    source={{ uri: item.image }}
+                    source={{ uri: productItem.imageUrl || productItem.image }}
                     style={styles.productImage}
                     contentFit="cover"
                   />
@@ -210,13 +215,13 @@ export default function HomeScreen() {
                     <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
                     <View style={styles.ratingRow}>
                       <Text style={styles.starIcon}>★</Text>
-                      <Text style={styles.rating}>{item.rating}</Text>
-                      <Text style={styles.reviews}>({item.reviews})</Text>
+                      <Text style={styles.rating}>{productItem.rating || 0}</Text>
+                      <Text style={styles.reviews}>({productItem.reviews || 0})</Text>
                     </View>
                     <Text style={styles.price}>{formatPrice(item.price)}</Text>
                   </View>
                 </TouchableOpacity>
-              )}
+              )}}
             />
           ) : (
             <View style={styles.emptyContainer}>

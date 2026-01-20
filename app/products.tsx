@@ -58,13 +58,12 @@ export default function ProductsScreen() {
         productService.getAllProducts({ limit: 100 })
       ]);
       
-      console.log('Products - Categories data:', categoriesData);
-      console.log('Products - Products response:', productsResponse);
-      console.log('Products - Products data array:', productsResponse?.data);
+      console.log('Products Response:', JSON.stringify(productsResponse, null, 2));
       
       setCategories(categoriesData);
-      const productsList = productsResponse?.data || [];
-      console.log('Products - Final products list:', productsList);
+      // API trả về array trực tiếp, không có .data wrapper
+      const productsList = Array.isArray(productsResponse) ? productsResponse : [];
+      console.log('Products List Length:', productsList.length);
       setAllProducts(productsList);
       setFilteredProducts(productsList);
     } catch (error: any) {
@@ -96,6 +95,12 @@ export default function ProductsScreen() {
     
     let result = [...allProducts];
 
+    // Filter out out-of-stock products
+    result = result.filter((p: any) => {
+      const stock = p.stockQuantity || p.stock || 0;
+      return stock > 0;
+    });
+
     // Filter by search query
     if (searchQuery.trim() !== '') {
       const query = searchQuery.toLowerCase();
@@ -107,7 +112,10 @@ export default function ProductsScreen() {
 
     // Filter by category
     if (selectedCategory !== 'all') {
-      result = result.filter((p) => p.category === selectedCategory);
+      result = result.filter((p: any) => {
+        // So sánh trực tiếp cả hai dưới dạng number hoặc string
+        return p.categoryId == selectedCategory;
+      });
     }
 
     // Sort
@@ -267,7 +275,9 @@ export default function ProductsScreen() {
               scrollEnabled={false}
               numColumns={2}
               columnWrapperStyle={styles.productGrid}
-              renderItem={({ item }) => (
+              renderItem={({ item }) => {
+                const productItem = item as any;
+                return (
                 <TouchableOpacity 
                   style={styles.productCard}
                   onPress={() => router.push({
@@ -276,7 +286,7 @@ export default function ProductsScreen() {
                   })}
                 >
                   <Image
-                    source={{ uri: item.image }}
+                    source={{ uri: productItem.imageUrl || productItem.image }}
                     style={styles.productImage}
                     contentFit="cover"
                   />
@@ -284,13 +294,13 @@ export default function ProductsScreen() {
                     <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
                     <View style={styles.ratingRow}>
                       <Text style={styles.starIcon}>★</Text>
-                      <Text style={styles.rating}>{item.rating}</Text>
-                      <Text style={styles.reviews}>({item.reviews})</Text>
+                      <Text style={styles.rating}>{productItem.rating || 0}</Text>
+                      <Text style={styles.reviews}>({productItem.reviews || 0})</Text>
                     </View>
                     <Text style={styles.price}>{formatPrice(item.price)}</Text>
                   </View>
                 </TouchableOpacity>
-              )}
+              )}}
             />
           )}
         </View>

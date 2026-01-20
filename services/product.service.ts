@@ -81,7 +81,8 @@ class ProductService {
         throw new Error(response.error);
       }
 
-      return response.data;
+      // Backend trả về {data: {...}, success, message}, cần lấy data bên trong
+      return response.data?.data || response.data;
     } catch (error: any) {
       console.error('Get product by ID error:', error);
       throw new Error(error.message || 'Không thể tải thông tin sản phẩm.');

@@ -26,10 +26,23 @@ export default function ProductDetailScreen() {
   const loadProductDetail = async () => {
     try {
       setLoading(true);
+      console.log('Loading product with ID:', productId);
       const productData = await productService.getProductById(productId);
-      setProduct(productData);
+      console.log('Product data received:', JSON.stringify(productData, null, 2));
+      
+      // Map API fields to Product interface
+      const mappedProduct = {
+        ...productData,
+        stock: (productData as any).stockQuantity || productData.stock || 0,
+        image: (productData as any).imageUrl || productData.image || '',
+        reviews: productData.reviews || 0,
+        rating: productData.rating || 0,
+      } as Product;
+      
+      setProduct(mappedProduct);
     } catch (error: any) {
       console.error('Load product detail error:', error);
+      console.error('Error details:', error.message);
       // Fallback: Sử dụng dữ liệu local
       const { products } = await import('@/data/products');
       const localProduct = products.find((p) => p.id === productId);
@@ -123,12 +136,6 @@ export default function ProductDetailScreen() {
               <Text style={styles.ratingNumber}>{product.rating}</Text>
             </View>
             <Text style={styles.reviewCount}>({product.reviews} đánh giá)</Text>
-            <View style={styles.separator} />
-            {product.stock > 0 ? (
-              <Text style={styles.inStock}>Còn {product.stock} sản phẩm</Text>
-            ) : (
-              <Text style={styles.outOfStock}>Hết hàng</Text>
-            )}
           </View>
 
           {/* Price */}
