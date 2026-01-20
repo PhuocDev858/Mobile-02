@@ -1,10 +1,23 @@
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { FlatList, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Platform,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
 import { useCart } from '@/context/CartContext';
-import { categories, products } from '@/data/products';
+import { Product } from '@/data/products';
+import productService, { Category } from '@/services/product.service';
 
 // Icon map for categories
 const categoryIcons: Record<string, string> = {
@@ -25,13 +38,63 @@ export default function ProductsScreen() {
   const initialCategory = (params.category as string) || 'all';
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredProducts, setFilteredProducts] = useState(products);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
   const [sortBy, setSortBy] = useState<string>('default');
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [categoriesData, productsResponse] = await Promise.all([
+        productService.getCategories(),
+        productService.getAllProducts({ limit: 100 })
+      ]);
+      
+      console.log('Products - Categories data:', categoriesData);
+      console.log('Products - Products response:', productsResponse);
+      console.log('Products - Products data array:', productsResponse?.data);
+      
+      setCategories(categoriesData);
+      const productsList = productsResponse?.data || [];
+      console.log('Products - Final products list:', productsList);
+      setAllProducts(productsList);
+      setFilteredProducts(productsList);
+    } catch (error: any) {
+      console.error('Load products error:', error);
+      console.error('Error details:', error.message);
+      // Fallback: Sử dụng dữ liệu local
+      const { categories: localCategories, products: localProducts } = await import('@/data/products');
+      setCategories(localCategories);
+      setAllProducts(localProducts);
+      setFilteredProducts(localProducts);
+      
+      Alert.alert('Chế độ Offline', 'Không thể kết nối server. Đang hiển thị dữ liệu mẫu.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
 
   useEffect(() => {
     // Filter and sort products
-    let result = [...products];
+    if (!allProducts || !Array.isArray(allProducts)) {
+      return;
+    }
+    
+    let result = [...allProducts];
 
     // Filter by search query
     if (searchQuery.trim() !== '') {
@@ -64,7 +127,7 @@ export default function ProductsScreen() {
     }
 
     setFilteredProducts(result);
-  }, [searchQuery, selectedCategory, sortBy]);
+  }, [searchQuery, selectedCategory, sortBy, allProducts]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -94,7 +157,23 @@ export default function ProductsScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#1B6BCF" />
+          <Text style={styles.loadingText}>Đang tải sản phẩm...</Text>
+        </View>
+      ) : (
+        <ScrollView 
+          showsVerticalScrollIndicator={false} 
+          style={styles.scrollView}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#1B6BCF']}
+            />
+          }
+        >
         {/* Filter Section */}
         <View style={styles.filterSection}>
           <Text style={styles.filterTitle}>🔍 Lọc theo danh mục</Text>
@@ -118,7 +197,7 @@ export default function ProductsScreen() {
               ]}>Tất cả</Text>
             </TouchableOpacity>
 
-            {categories.map((category) => (
+            {categories && categories.map((category) => (
               <TouchableOpacity 
                 key={category.id}
                 style={[
@@ -174,10 +253,10 @@ export default function ProductsScreen() {
         {/* Products Section */}
         <View style={styles.productsSection}>
           <Text style={styles.resultsText}>
-            Hiển thị {filteredProducts.length} sản phẩm
+            Hiển thị {filteredProducts?.length || 0} sản phẩm
           </Text>
 
-          {filteredProducts.length === 0 ? (
+          {!filteredProducts || filteredProducts.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>Không tìm thấy sản phẩm nào</Text>
             </View>
@@ -216,6 +295,7 @@ export default function ProductsScreen() {
           )}
         </View>
       </ScrollView>
+      )}
     </View>
   );
 }
@@ -225,6 +305,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
     paddingTop: 0,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#666',
   },
   searchContainer: {
     flexDirection: 'row',

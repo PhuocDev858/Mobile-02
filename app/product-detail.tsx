@@ -1,9 +1,10 @@
 import { Colors } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
-import { products } from '@/data/products';
+import { Product } from '@/data/products';
+import productService from '@/services/product.service';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function ProductDetailScreen() {
@@ -15,21 +16,32 @@ export default function ProductDetailScreen() {
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const product = useMemo(() => products.find((p) => p.id === productId), [productId]);
+  useEffect(() => {
+    loadProductDetail();
+  }, [productId]);
 
-  if (!product) {
-    return (
-      <View style={styles.container}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backButtonText}>← Quay lại</Text>
-        </TouchableOpacity>
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Không tìm thấy sản phẩm</Text>
-        </View>
-      </View>
-    );
-  }
+  const loadProductDetail = async () => {
+    try {
+      setLoading(true);
+      const productData = await productService.getProductById(productId);
+      setProduct(productData);
+    } catch (error: any) {
+      console.error('Load product detail error:', error);
+      // Fallback: Sử dụng dữ liệu local
+      const { products } = await import('@/data/products');
+      const localProduct = products.find((p) => p.id === productId);
+      if (localProduct) {
+        setProduct(localProduct);
+      } else {
+        Alert.alert('Lỗi', 'Không tìm thấy sản phẩm');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -43,18 +55,19 @@ export default function ProductDetailScreen() {
   };
 
   const handleIncreaseQuantity = () => {
-    if (quantity < product.stock) setQuantity(quantity + 1);
+    if (product && quantity < product.stock) setQuantity(quantity + 1);
   };
 
   const handleAddToCart = async () => {
+    if (!product) return;
+    
     setIsAdding(true);
     try {
-      // Add to cart
       addToCart(product, quantity);
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
-        setQuantity(1); // Reset quantity after adding
+        setQuantity(1);
       }, 3000);
     } catch (error) {
       Alert.alert('Lỗi', 'Không thể thêm sản phẩm vào giỏ hàng');
@@ -70,15 +83,26 @@ export default function ProductDetailScreen() {
         <Text style={styles.backButtonText}>← Quay lại</Text>
       </TouchableOpacity>
 
-      {/* Success Message */}
-      {showSuccess && (
-        <View style={styles.successMessage}>
-          <Text style={styles.successText}>✓ Đã thêm sản phẩm vào giỏ hàng!</Text>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#1B6BCF" />
+          <Text style={styles.loadingText}>Đang tải thông tin sản phẩm...</Text>
         </View>
-      )}
+      ) : !product ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>Không tìm thấy sản phẩm</Text>
+        </View>
+      ) : (
+        <>
+          {/* Success Message */}
+          {showSuccess && (
+            <View style={styles.successMessage}>
+              <Text style={styles.successText}>✓ Đã thêm sản phẩm vào giỏ hàng!</Text>
+            </View>
+          )}
 
-      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
-        {/* Product Image */}
+          <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
+            {/* Product Image */}
         <View style={styles.imageContainer}>
           <Image
             source={{ uri: product.image }}
@@ -119,7 +143,7 @@ export default function ProductDetailScreen() {
           <View style={styles.specsSection}>
             <Text style={styles.specsTitle}>Thông số kỹ thuật</Text>
             <View style={styles.specsList}>
-              {Object.entries(product.specs).map(([key, value], index) => (
+              {product.specs && Object.entries(product.specs).map(([key, value], index) => (
                 <View key={key}>
                   <View style={styles.specItem}>
                     <Text style={styles.specLabel}>{key}</Text>
@@ -174,6 +198,8 @@ export default function ProductDetailScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      </>
+      )}
     </View>
   );
 }
@@ -183,6 +209,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
     paddingTop: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#666',
   },
   backButton: {
     paddingHorizontal: 16,
