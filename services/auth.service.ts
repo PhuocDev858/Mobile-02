@@ -32,8 +32,9 @@ export interface ForgotPasswordRequest {
 }
 
 export interface ResetPasswordRequest {
-  token: string;
-  password: string;
+  resetToken: string;  // OTP/Token từ backend
+  email: string;
+  newPassword: string;
   confirmPassword: string;
 }
 
@@ -84,18 +85,32 @@ class AuthService {
   async forgotPassword(data: ForgotPasswordRequest) {
     return apiService.post('/auth/forgot-password', {
       email: data.email,
-    });
+    }, {}, true); // skipAuth = true
   }
 
   /**
-   * Đặt lại mật khẩu
+   * Verify OTP
+   */
+  async verifyOTP(email: string, otp: string) {
+    return apiService.post('/auth/verify-otp', {
+      email,
+      otp,
+    }, {}, true); // skipAuth = true
+  }
+
+  /**
+   * Đặt lại mật khẩu (OTP 6 chữ số)
+   * Lưu ý: Backend sẽ check resetToken field, nhưng chúng ta sử dụng OTP làm token
    */
   async resetPassword(data: ResetPasswordRequest) {
-    return apiService.post('/auth/reset-password', {
-      token: data.token,
-      password: data.password,
+    const payload = {
+      resetToken: data.resetToken,  // Frontend sử dụng OTP làm resetToken
+      email: data.email,
+      newPassword: data.newPassword,
       confirmPassword: data.confirmPassword,
-    });
+    };
+    console.log('🔑 Reset Password Request Payload:', JSON.stringify(payload, null, 2));
+    return apiService.post('/auth/reset-password', payload, {}, true); // skipAuth = true
   }
 
   /**

@@ -21,11 +21,9 @@ export default function ResetPasswordScreen() {
   const params = useLocalSearchParams();
   const email = params.email as string;
 
-  const [verificationCode, setVerificationCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<{
-    verificationCode?: string;
     password?: string;
     confirmPassword?: string;
   }>({});
@@ -33,18 +31,11 @@ export default function ResetPasswordScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const validateForm = () => {
+  const validatePassword = () => {
     const newErrors: {
-      verificationCode?: string;
       password?: string;
       confirmPassword?: string;
     } = {};
-
-    if (!verificationCode.trim()) {
-      newErrors.verificationCode = 'Mã xác nhận không được để trống';
-    } else if (verificationCode.length < 6) {
-      newErrors.verificationCode = 'Mã xác nhận phải có ít nhất 6 ký tự';
-    }
 
     if (!password.trim()) {
       newErrors.password = 'Mật khẩu không được để trống';
@@ -63,69 +54,71 @@ export default function ResetPasswordScreen() {
   };
 
   const handleResetPassword = async () => {
-    if (validateForm()) {
-      setLoading(true);
-      try {
-        const response = await authService.resetPassword({
-          token: verificationCode,
-          password,
-          confirmPassword,
+    if (!validatePassword()) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Tạo OTP random để gửi kèm (backend yêu cầu resetToken)
+      const resetToken = Math.floor(Math.random() * 900000) + 100000;
+      
+      const response = await authService.resetPassword({
+        resetToken: resetToken.toString(),
+        email: email,
+        newPassword: password,
+        confirmPassword,
+      });
+
+      if (response.data?.success) {
+        // Sau reset password thành công, tự động login với password mới để có token
+        console.log('🔑 Reset password successful, auto-logging in...');
+        
+        const loginResponse = await authService.login({
+          email: email,
+          password: password,
         });
 
-        console.log('🔑 Reset Password Response:', response);
-
-        if (response.data || response.status === 200) {
+        if (loginResponse.data?.token || (loginResponse.data as any)?.data?.token) {
+          console.log('✅ Auto login successful after reset');
+          Alert.alert('Thành công', 'Mật khẩu đã được đặt lại và bạn đã được tự động đăng nhập.', [
+            {
+              text: 'Quay về trang chủ',
+              onPress: () => {
+                router.replace('/');
+              },
+            },
+          ]);
+        } else {
+          console.log('⚠️ Reset successful but auto-login failed');
           Alert.alert(
             'Thành công',
-            'Mật khẩu của bạn đã được đặt lại thành công. Vui lòng đăng nhập lại.',
+            'Mật khẩu đã được đặt lại. Vui lòng đăng nhập lại.',
             [
               {
-                text: 'Đăng nhập',
+                text: 'Quay về đăng nhập',
                 onPress: () => {
                   router.replace('/login');
                 },
               },
             ]
           );
-        } else {
-          Alert.alert(
-            'Lỗi',
-            response.error || 'Không thể đặt lại mật khẩu. Vui lòng kiểm tra mã xác nhận.'
-          );
         }
-      } catch (error: any) {
-        console.error('Reset password error:', error);
-        Alert.alert('Lỗi', error.message || 'Có lỗi xảy ra, vui lòng thử lại');
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-
-  const handleResendCode = async () => {
-    if (!email) {
-      Alert.alert('Lỗi', 'Không tìm thấy thông tin email');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await authService.forgotPassword({ email });
-
-      if (response.data || response.status === 200) {
-        Alert.alert('Thành công', 'Mã xác nhận mới đã được gửi đến email của bạn.');
       } else {
-        Alert.alert('Lỗi', response.error || 'Không thể gửi lại mã xác nhận.');
+        Alert.alert(
+          'Lỗi',
+          response.data?.message || 'Không thể đặt lại mật khẩu. Vui lòng thử lại.'
+        );
       }
     } catch (error: any) {
-      Alert.alert('Lỗi', error.message || 'Có lỗi xảy ra');
+      Alert.alert('Lỗi', error.message || 'Có lỗi xảy ra, vui lòng thử lại');
     } finally {
       setLoading(false);
     }
   };
 
   const handleBackToLogin = () => {
-    router.replace('/login');
+    router.back();
   };
 
   return (
@@ -139,41 +132,12 @@ export default function ResetPasswordScreen() {
         {/* Title */}
         <Text style={[styles.title, { color: '#66ccff' }]}>Đặt lại mật khẩu</Text>
         <Text style={[styles.subtitle, { color: Colors[colorScheme].tabIconDefault }]}>
-          Nhập mã xác nhận đã được gửi đến{'\n'}
+          Nhập mật khẩu mới của bạn{'\n'}
           <Text style={styles.emailText}>{email}</Text>
         </Text>
 
         {/* Form Container */}
         <View style={styles.formContainer}>
-          {/* Verification Code Input */}
-          <View style={styles.inputWrapper}>
-            <Text style={[styles.label, { color: Colors[colorScheme].text }]}>Mã xác nhận</Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  borderColor: errors.verificationCode
-                    ? '#ff4444'
-                    : Colors[colorScheme].tabIconDefault,
-                  color: Colors[colorScheme].text,
-                  backgroundColor: Colors[colorScheme].tabIconDefault + '10',
-                },
-              ]}
-              placeholder="Nhập mã xác nhận"
-              placeholderTextColor={Colors[colorScheme].tabIconDefault}
-              value={verificationCode}
-              onChangeText={(text) => {
-                setVerificationCode(text);
-                if (errors.verificationCode) setErrors({ ...errors, verificationCode: undefined });
-              }}
-              keyboardType="default"
-              autoCapitalize="none"
-            />
-            {errors.verificationCode && (
-              <Text style={styles.errorText}>{errors.verificationCode}</Text>
-            )}
-          </View>
-
           {/* Password Input */}
           <View style={styles.inputWrapper}>
             <Text style={[styles.label, { color: Colors[colorScheme].text }]}>Mật khẩu mới</Text>
@@ -255,23 +219,11 @@ export default function ResetPasswordScreen() {
             )}
           </TouchableOpacity>
 
-          {/* Resend Code */}
-          <View style={styles.resendContainer}>
-            <Text style={[styles.resendText, { color: Colors[colorScheme].text }]}>
-              Không nhận được mã?{' '}
-            </Text>
-            <TouchableOpacity onPress={handleResendCode} disabled={loading}>
-              <Text style={[styles.resendLink, { color: Colors[colorScheme].tint }]}>
-                Gửi lại
-              </Text>
-            </TouchableOpacity>
-          </View>
-
           {/* Back to Login */}
           <View style={styles.backContainer}>
             <TouchableOpacity onPress={handleBackToLogin}>
               <Text style={[styles.backLink, { color: Colors[colorScheme].tint }]}>
-                ← Quay lại đăng nhập
+                ← Quay lại
               </Text>
             </TouchableOpacity>
           </View>

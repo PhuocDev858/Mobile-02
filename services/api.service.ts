@@ -11,6 +11,7 @@ interface RequestConfig {
   headers?: Record<string, string>;
   body?: any;
   timeout?: number;
+  skipAuth?: boolean; // Bỏ qua token nếu true
 }
 
 interface ApiResponse<T = any> {
@@ -38,18 +39,22 @@ class ApiService {
   /**
    * Chuẩn bị headers cho request
    */
-  private async prepareHeaders(customHeaders?: Record<string, string>) {
-    const token = await this.getTokenFromStorage();
+  private async prepareHeaders(customHeaders?: Record<string, string>, skipAuth?: boolean) {
     const headers: Record<string, string> = {
       ...API_CONFIG.HEADERS,
       ...customHeaders,
     };
 
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-      console.log('📤 Request with token:', token.substring(0, 20) + '...');
+    if (!skipAuth) {
+      const token = await this.getTokenFromStorage();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        console.log('📤 Request with token:', token.substring(0, 20) + '...');
+      } else {
+        console.log('⚠️ No token found for request');
+      }
     } else {
-      console.log('⚠️ No token found for request');
+      console.log('⏭️ Skipping token for public endpoint');
     }
 
     return headers;
@@ -64,7 +69,7 @@ class ApiService {
   ): Promise<ApiResponse<T>> {
     try {
       const url = `${this.baseUrl}${endpoint}`;
-      const headers = await this.prepareHeaders(config.headers);
+      const headers = await this.prepareHeaders(config.headers, config.skipAuth);
       const method = config.method || 'GET';
       const timeout = config.timeout || this.timeout;
 
@@ -136,9 +141,10 @@ class ApiService {
   async post<T>(
     endpoint: string,
     body?: any,
-    headers?: Record<string, string>
+    headers?: Record<string, string>,
+    skipAuth?: boolean
   ) {
-    return this.request<T>(endpoint, { method: 'POST', body, headers });
+    return this.request<T>(endpoint, { method: 'POST', body, headers, skipAuth });
   }
 
   /**

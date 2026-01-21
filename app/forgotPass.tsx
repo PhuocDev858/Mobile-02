@@ -42,39 +42,11 @@ export default function ForgotPassScreen() {
 
   const handleForgotPassword = async () => {
     if (validateForm()) {
-      setLoading(true);
-      try {
-        const response = await authService.forgotPassword({ email });
-
-        console.log('📧 Forgot Password Response:', response);
-
-        if (response.data || response.status === 200) {
-          // Gửi email thành công
-          Alert.alert(
-            'Thành công',
-            'Mã xác nhận đã được gửi đến email của bạn. Vui lòng kiểm tra email.',
-            [
-              {
-                text: 'OK',
-                onPress: () => {
-                  // Chuyển đến màn hình reset password
-                  router.push({
-                    pathname: '/reset-password',
-                    params: { email },
-                  });
-                },
-              },
-            ]
-          );
-        } else {
-          Alert.alert('Lỗi', response.error || 'Không thể gửi email. Vui lòng thử lại.');
-        }
-      } catch (error: any) {
-        console.error('Forgot password error:', error);
-        Alert.alert('Lỗi', error.message || 'Có lỗi xảy ra, vui lòng thử lại');
-      } finally {
-        setLoading(false);
-      }
+      // Chuyển tới trang nhập OTP
+      router.push({
+        pathname: '/inputOTP',
+        params: { email },
+      });
     }
   };
 
@@ -130,7 +102,7 @@ export default function ForgotPassScreen() {
             {loading ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text style={styles.signInButtonText}>Gửi mã xác nhận</Text>
+              <Text style={styles.signInButtonText}>Tiếp tục</Text>
             )}
           </TouchableOpacity>
 
