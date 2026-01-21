@@ -16,9 +16,10 @@ import {
 } from 'react-native';
 
 import { useCart } from '@/context/CartContext';
+import { useProductData } from '@/context/ProductDataContext';
+import { useSelectedCategory } from '@/context/SelectedCategoryContext';
 import { Product } from '@/data/products';
 import { authService } from '@/services/auth.service';
-import productService, { Category } from '@/services/product.service';
 
 // Icon map for categories
 const categoryIcons: Record<string, string> = {
@@ -34,56 +35,24 @@ const categoryIcons: Record<string, string> = {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { setSelectedCategoryId } = useSelectedCategory();
   const [showMenu, setShowMenu] = useState(false);
   const [user, setUser] = useState<{ username?: string; email?: string; name?: string } | null>(null);
   const { getTotalItems } = useCart();
   const cartCount = getTotalItems();
   const [searchQuery, setSearchQuery] = useState('');
   
-  // States cho dữ liệu từ API
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Lấy dữ liệu từ shared context
+  const { categories, featuredProducts, loading, refreshData } = useProductData();
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchUserData();
-    loadData();
   }, []);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      // Gọi API song song
-      const [categoriesData, productsData] = await Promise.all([
-        productService.getCategories(),
-        productService.getFeaturedProducts(4)
-      ]);
-      
-      console.log('Categories data:', JSON.stringify(categoriesData, null, 2));
-      setCategories(categoriesData);
-      setFeaturedProducts(productsData);
-    } catch (error: any) {
-      console.error('Load data error:', error);
-      // Fallback: Sử dụng dữ liệu local khi API fail
-      const { categories: localCategories, products: localProducts } = await import('@/data/products');
-      setCategories(localCategories);
-      setFeaturedProducts(localProducts.slice(0, 4));
-      
-      // Thông báo cho user biết đang dùng dữ liệu offline
-      Alert.alert(
-        'Chế độ Offline', 
-        'Không thể kết nối server. Đang hiển thị dữ liệu mẫu.',
-        [{ text: 'OK' }]
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadData();
+    await refreshData();
     setRefreshing(false);
   };
 
@@ -167,10 +136,10 @@ export default function HomeScreen() {
               <TouchableOpacity 
                 key={category.id}
                 style={styles.categoryCard}
-                onPress={() => router.push({
-                  pathname: '/products',
-                  params: { category: category.id }
-                })}
+                onPress={() => {
+                  setSelectedCategoryId(category.id);
+                  router.push('/(tabs)/categories');
+                }}
               >
                 <View style={styles.categoryIcon}>
                   <Text style={styles.categoryIconText}>{categoryIcons[category.name] || '📦'}</Text>

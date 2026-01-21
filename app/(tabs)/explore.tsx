@@ -78,7 +78,7 @@ export default function AccountScreen() {
       title: 'Đơn hàng của tôi',
       icon: '📦',
       onPress: () => {
-        Alert.alert('Thông báo', 'Tính năng đơn hàng sẽ sớm có');
+        router.push('/orders');
       },
     },
     {
