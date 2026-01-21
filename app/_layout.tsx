@@ -23,6 +23,8 @@ export default function RootLayout() {
           <Stack.Screen name="forgotPass" options={{ headerShown: false }} />
           <Stack.Screen name="inputOTP" options={{ headerShown: false }} />
           <Stack.Screen name="reset-password" options={{ headerShown: false }} />
+          <Stack.Screen name="user-profile" options={{ headerShown: false }} />
+          <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           <Stack.Screen name="product-detail" options={{ headerShown: false }} />
           <Stack.Screen name="products" options={{ headerShown: false }} />

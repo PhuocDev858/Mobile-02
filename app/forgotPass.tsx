@@ -1,10 +1,8 @@
 import { Colors } from '@/constants/theme';
-import { authService } from '@/services/auth.service';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
     ActivityIndicator,
-    Alert,
     Image,
     SafeAreaView,
     ScrollView,

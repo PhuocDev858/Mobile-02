@@ -130,40 +130,42 @@ export default function AccountScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {userInfo ? (
           <>
-            {/* User Info Header */}
-            <View style={[styles.userHeader, { backgroundColor: Colors[colorScheme].tint + '15' }]}>
-              {/* Avatar */}
-              <View style={[styles.avatar, { backgroundColor: Colors[colorScheme].tint }]}>
-                <ThemedText style={styles.avatarText}>
-                  {(userInfo.fullName || userInfo.name || userInfo.email || 'U')
-                    .charAt(0)
-                    .toUpperCase()}
-                </ThemedText>
-              </View>
-
-              {/* User Info */}
-              <View style={styles.userDetails}>
-                <ThemedText style={[styles.userName, { color: Colors[colorScheme].text }]}>
-                  {userInfo.fullName || userInfo.name || 'Người dùng'}
-                </ThemedText>
-                <ThemedText style={[styles.userEmail, { color: Colors[colorScheme].tabIconDefault }]}>
-                  {userInfo.email}
-                </ThemedText>
-                {userInfo.username && (
-                  <ThemedText style={[styles.userUsername, { color: Colors[colorScheme].tabIconDefault }]}>
-                    @{userInfo.username}
-                  </ThemedText>
-                )}
-              </View>
-            </View>
-
-            {/* Edit Profile Button */}
+            {/* User Info Header - Clickable */}
             <TouchableOpacity
-              style={[styles.editButton, { backgroundColor: Colors[colorScheme].tint }]}
               onPress={() => {
-                Alert.alert('Thông báo', 'Tính năng chỉnh sửa profile sẽ sớm có');
-              }}>
-              <ThemedText style={styles.editButtonText}>Chỉnh sửa hồ sơ</ThemedText>
+                router.push('/user-profile');
+              }}
+              activeOpacity={0.7}>
+              <View style={[styles.userHeader, { backgroundColor: Colors[colorScheme].tint + '15' }]}>
+                {/* Avatar */}
+                <View style={[styles.avatar, { backgroundColor: Colors[colorScheme].tint }]}>
+                  <ThemedText style={styles.avatarText}>
+                    {(userInfo.fullName || userInfo.name || userInfo.email || 'U')
+                      .charAt(0)
+                      .toUpperCase()}
+                  </ThemedText>
+                </View>
+
+                {/* User Info */}
+                <View style={styles.userDetails}>
+                  <ThemedText style={[styles.userName, { color: Colors[colorScheme].text }]}>
+                    {userInfo.fullName || userInfo.name || 'Người dùng'}
+                  </ThemedText>
+                  <ThemedText style={[styles.userEmail, { color: Colors[colorScheme].tabIconDefault }]}>
+                    {userInfo.email}
+                  </ThemedText>
+                  {userInfo.username && (
+                    <ThemedText style={[styles.userUsername, { color: Colors[colorScheme].tabIconDefault }]}>
+                      @{userInfo.username}
+                    </ThemedText>
+                  )}
+                </View>
+                
+                {/* Arrow indicator */}
+                <ThemedText style={[styles.chevron, { color: Colors[colorScheme].tabIconDefault }]}>
+                  ›
+                </ThemedText>
+              </View>
             </TouchableOpacity>
 
             {/* Menu Items */}
@@ -279,6 +281,10 @@ const styles = StyleSheet.create({
   },
   userUsername: {
     fontSize: 12,
+  },
+  chevron: {
+    fontSize: 24,
+    marginLeft: 8,
   },
   editButton: {
     paddingVertical: 12,

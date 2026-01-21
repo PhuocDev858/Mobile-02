@@ -38,6 +38,16 @@ export interface ResetPasswordRequest {
   confirmPassword: string;
 }
 
+export interface UpdateProfileRequest {
+  fullName: string;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
 class AuthService {
   /**
    * Đăng nhập
@@ -125,6 +135,26 @@ class AuthService {
    */
   async getCurrentUser() {
     return apiService.get('/auth/me');
+  }
+
+  /**
+   * Cập nhật hồ sơ người dùng
+   */
+  async updateProfile(data: UpdateProfileRequest) {
+    return apiService.put('/auth/profile', {
+      fullName: data.fullName,
+    });
+  }
+
+  /**
+   * Đổi mật khẩu
+   */
+  async changePassword(data: ChangePasswordRequest) {
+    return apiService.post('/auth/change-password', {
+      currentPassword: data.currentPassword,
+      newPassword: data.newPassword,
+      confirmPassword: data.confirmPassword,
+    });
   }
 }
 
