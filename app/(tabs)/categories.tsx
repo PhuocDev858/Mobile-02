@@ -1,9 +1,8 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
-    Alert,
     FlatList,
     Platform,
     RefreshControl,
@@ -42,6 +41,9 @@ export default function CategoriesScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string>(selectedCategoryId);
   const [sortBy, setSortBy] = useState<string>('default');
   const [refreshing, setRefreshing] = useState(false);
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [suggestions, setSuggestions] = useState<Product[]>([]);
 
   // Cập nhật selectedCategory khi selectedCategoryId từ context thay đổi
   useEffect(() => {
@@ -52,6 +54,40 @@ export default function CategoriesScreen() {
     setRefreshing(true);
     await refreshData();
     setRefreshing(false);
+  };
+
+  // Hiển thị gợi ý sản phẩm khi người dùng nhập
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      const suggestions = allProducts.filter((product) =>
+        product.name.toLowerCase().includes(query)
+      );
+      setSuggestions(suggestions.slice(0, 5));
+    } else {
+      setSuggestions([]);
+    }
+  }, [searchQuery, allProducts]);
+
+  // Thực hiện tìm kiếm đầy đủ khi người dùng bấm nút tìm kiếm
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      const results = allProducts.filter((product) =>
+        product.name.toLowerCase().includes(query) ||
+        product.description.toLowerCase().includes(query)
+      );
+      setSearchResults(results);
+      setIsSearching(true);
+      setSuggestions([]);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setIsSearching(false);
+    setSuggestions([]);
   };
 
   useEffect(() => {
@@ -115,13 +151,18 @@ export default function CategoriesScreen() {
     <View style={styles.container}>
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="🔍 Tìm kiếm sản phẩm..."
-          placeholderTextColor="#999"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
+        <View style={styles.searchInputWrapper}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Tìm kiếm sản phẩm..."
+            placeholderTextColor="#999"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          <TouchableOpacity onPress={handleSearch} style={styles.searchButtonIcon}>
+            <Text>🔍</Text>
+          </TouchableOpacity>
+        </View>
         <TouchableOpacity style={styles.cartButton} onPress={() => router.push('/cart')}>
           <Text style={styles.cartIcon}>🛒</Text>
           {cartCount > 0 && (
@@ -132,12 +173,100 @@ export default function CategoriesScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Suggestions dropdown */}
+      {suggestions.length > 0 && !isSearching && (
+        <View style={styles.suggestionsContainer}>
+          <FlatList
+            data={suggestions}
+            keyExtractor={(item) => item.id}
+            scrollEnabled={false}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.suggestionItem}
+                onPress={() => {
+                  setSearchQuery(item.name);
+                  handleSearch();
+                }}
+              >
+                <Text style={styles.suggestionText}>{item.name}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      )}
+
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#1B6BCF" />
           <Text style={styles.loadingText}>Đang tải sản phẩm...</Text>
         </View>
+      ) : isSearching ? (
+        // Hiển thị kết quả tìm kiếm
+        <ScrollView 
+          showsVerticalScrollIndicator={false} 
+          style={styles.scrollView}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#1B6BCF']}
+            />
+          }
+        >
+          <View style={styles.searchResultsSection}>
+            <View style={styles.searchResultsHeader}>
+              <Text style={styles.resultsText}>
+                {searchResults.length} sản phẩm tìm được cho "{searchQuery}"
+              </Text>
+              <TouchableOpacity onPress={handleClearSearch}>
+                <Text style={styles.clearSearchText}>Xóa</Text>
+              </TouchableOpacity>
+            </View>
+
+            {!searchResults || searchResults.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>Không tìm thấy sản phẩm nào</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={searchResults}
+                keyExtractor={(item) => item.id}
+                scrollEnabled={false}
+                numColumns={2}
+                columnWrapperStyle={styles.productGrid}
+                renderItem={({ item }) => {
+                  const productItem = item as any;
+                  return (
+                    <TouchableOpacity 
+                      style={styles.productCard}
+                      onPress={() => router.push({
+                        pathname: '/product-detail',
+                        params: { productId: item.id }
+                      })}
+                    >
+                      <Image
+                        source={{ uri: productItem.imageUrl || productItem.image }}
+                        style={styles.productImage}
+                        contentFit="cover"
+                      />
+                      <View style={styles.productInfo}>
+                        <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
+                        <View style={styles.ratingRow}>
+                          <Text style={styles.starIcon}>★</Text>
+                          <Text style={styles.rating}>{productItem.rating || 0}</Text>
+                          <Text style={styles.reviews}>({productItem.reviews || 0})</Text>
+                        </View>
+                        <Text style={styles.price}>{formatPrice(item.price)}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            )}
+          </View>
+        </ScrollView>
       ) : (
+        // Hiển thị danh mục và lọc bình thường
         <ScrollView 
           showsVerticalScrollIndicator={false} 
           style={styles.scrollView}
@@ -309,6 +438,10 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: Platform.OS === 'android' ? 16 : 0,
   },
+  searchInputWrapper: {
+    flex: 1,
+    position: 'relative',
+  },
   searchInput: {
     flex: 1,
     backgroundColor: 'white',
@@ -317,6 +450,30 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
+    paddingRight: 40,
+    fontSize: 14,
+    color: '#333',
+  },
+  searchButtonIcon: {
+    position: 'absolute',
+    right: 12,
+    top: '50%',
+    marginTop: -9,
+    padding: 8,
+  },
+  suggestionsContainer: {
+    maxHeight: 250,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  suggestionItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  suggestionText: {
     fontSize: 14,
     color: '#333',
   },
@@ -443,11 +600,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
+  searchResultsSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  searchResultsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   resultsText: {
     fontSize: 14,
     color: '#666',
-    marginBottom: 12,
+    marginBottom: 0,
     fontWeight: '500',
+  },
+  clearSearchText: {
+    color: '#1B6BCF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   emptyContainer: {
     paddingVertical: 40,

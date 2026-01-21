@@ -3,7 +3,6 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
-    Alert,
     FlatList,
     Platform,
     RefreshControl,
@@ -15,6 +14,7 @@ import {
     View
 } from 'react-native';
 
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useCart } from '@/context/CartContext';
 import { useProductData } from '@/context/ProductDataContext';
 import { useSelectedCategory } from '@/context/SelectedCategoryContext';
@@ -45,6 +45,9 @@ export default function HomeScreen() {
   // Lấy dữ liệu từ shared context
   const { categories, featuredProducts, loading, refreshData } = useProductData();
   const [refreshing, setRefreshing] = useState(false);
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [suggestions, setSuggestions] = useState<Product[]>([]);
 
   useEffect(() => {
     fetchUserData();
@@ -67,13 +70,38 @@ export default function HomeScreen() {
     }
   };
 
-  const handleSearchPress = () => {
+  // Hiển thị gợi ý sản phẩm khi người dùng nhập (chỉ tìm kiếm theo tên)
+  useEffect(() => {
     if (searchQuery.trim()) {
-      router.push({
-        pathname: '/products',
-        params: { search: searchQuery }
-      });
+      const query = searchQuery.toLowerCase();
+      const suggestions = featuredProducts.filter((product) =>
+        product.name.toLowerCase().includes(query)
+      );
+      setSuggestions(suggestions);
+    } else {
+      setSuggestions([]);
     }
+  }, [searchQuery, featuredProducts]);
+
+  // Thực hiện tìm kiếm đầy đủ khi người dùng bấm nút tìm kiếm
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      const results = featuredProducts.filter((product) =>
+        product.name.toLowerCase().includes(query) ||
+        product.description.toLowerCase().includes(query)
+      );
+      setSearchResults(results);
+      setIsSearching(true);
+      setSuggestions([]);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setIsSearching(false);
+    setSuggestions([]);
   };
 
   const formatPrice = (price: number) => {
@@ -87,13 +115,18 @@ export default function HomeScreen() {
     <>
       {/* Header with Search Bar and Cart Icon */}
       <View style={styles.headerContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Tìm kiếm sản phẩm..."
-          placeholderTextColor="#999"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
+        <View style={styles.searchInputContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Tìm kiếm sản phẩm..."
+            placeholderTextColor="#999"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          <TouchableOpacity onPress={handleSearch} style={styles.searchButtonIcon}>
+            <IconSymbol name="magnifyingglass" size={18} color="#1B6BCF" />
+          </TouchableOpacity>
+        </View>
         <TouchableOpacity
           style={styles.cartButton}
           onPress={() => router.push('/cart')}>
@@ -106,13 +139,93 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Suggestions dropdown */}
+      {suggestions.length > 0 && !isSearching && (
+        <View style={styles.suggestionsContainer}>
+          <FlatList
+            data={suggestions.slice(0, 5)}
+            keyExtractor={(item) => item.id}
+            scrollEnabled={false}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.suggestionItem}
+                onPress={() => {
+                  setSearchQuery(item.name);
+                  handleSearch();
+                }}
+              >
+                <Text style={styles.suggestionText}>{item.name}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      )}
+
       {/* Main Content */}
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#1B6BCF" />
           <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
         </View>
+      ) : isSearching ? (
+        // Hiển thị kết quả tìm kiếm
+        <ScrollView 
+          showsVerticalScrollIndicator={false} 
+          style={{ flex: 1 }}
+        >
+          <View style={styles.searchResultsSection}>
+            <View style={styles.searchResultsHeader}>
+              <Text style={styles.resultsText}>
+                {searchResults.length} sản phẩm tìm được cho "{searchQuery}"
+              </Text>
+              <TouchableOpacity onPress={handleClearSearch}>
+                <Text style={styles.clearSearchText}>Xóa</Text>
+              </TouchableOpacity>
+            </View>
+            {searchResults.length > 0 ? (
+              <FlatList
+                data={searchResults}
+                keyExtractor={(item) => item.id}
+                scrollEnabled={false}
+                numColumns={2}
+                columnWrapperStyle={styles.productGrid}
+                renderItem={({ item }) => {
+                  const productItem = item as any;
+                  return (
+                    <TouchableOpacity 
+                      style={styles.productCard}
+                      onPress={() => router.push({
+                        pathname: '/product-detail',
+                        params: { productId: item.id }
+                      })}
+                    >
+                      <Image
+                        source={{ uri: productItem.imageUrl || productItem.image }}
+                        style={styles.productImage}
+                        contentFit="cover"
+                      />
+                      <View style={styles.productInfo}>
+                        <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
+                        <View style={styles.ratingRow}>
+                          <Text style={styles.starIcon}>★</Text>
+                          <Text style={styles.rating}>{productItem.rating || 0}</Text>
+                          <Text style={styles.reviews}>({productItem.reviews || 0})</Text>
+                        </View>
+                        <Text style={styles.price}>{formatPrice(item.price)}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>Không tìm thấy sản phẩm</Text>
+              </View>
+            )}
+          </View>
+        </ScrollView>
       ) : (
+        // Hiển thị danh mục và sản phẩm nổi bật bình thường
         <ScrollView 
           showsVerticalScrollIndicator={false} 
           style={{ flex: 1 }}
@@ -247,8 +360,60 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
+    paddingRight: 40,
     fontSize: 14,
     color: '#333',
+  },
+  searchInputContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  searchIcon: {
+    position: 'absolute',
+    right: 12,
+    top: '50%',
+    fontSize: 18,
+    marginTop: -9,
+  },
+  searchIconSymbol: {
+    position: 'absolute',
+    right: 12,
+    top: '50%',
+    marginTop: -9,
+  },
+  searchButtonIcon: {
+    position: 'absolute',
+    right: 12,
+    top: '50%',
+    marginTop: -9,
+    padding: 8,
+  },
+  suggestionsContainer: {
+    maxHeight: 250,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  suggestionItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  suggestionText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  searchResultsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  clearSearchText: {
+    color: '#1B6BCF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   spacer: {
     flex: 1,
@@ -329,6 +494,16 @@ const styles = StyleSheet.create({
   menuItemText: {
     fontSize: 14,
     color: '#333',
+    fontWeight: '500',
+  },
+  searchResultsSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  resultsText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 12,
     fontWeight: '500',
   },
   // Hero Section
