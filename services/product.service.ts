@@ -125,6 +125,60 @@ class ProductService {
       throw new Error(error.message || 'Không thể tìm kiếm sản phẩm.');
     }
   }
+
+  /**
+   * Tạo sản phẩm mới
+   */
+  async createProduct(product: any): Promise<Product | null> {
+    try {
+      const response = await apiService.post('/products', product);
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      return response.data;
+    } catch (error: any) {
+      console.error('Create product error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Cập nhật sản phẩm
+   */
+  async updateProduct(id: string, updates: any): Promise<Product | null> {
+    try {
+      const response = await apiService.put(`/products/${id}`, updates);
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      return response.data;
+    } catch (error: any) {
+      console.error('Update product error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Xóa sản phẩm
+   */
+  async deleteProduct(id: string): Promise<boolean> {
+    try {
+      const response = await apiService.delete(`/products/${id}`);
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      return true;
+    } catch (error: any) {
+      console.error('Delete product error:', error);
+      return false;
+    }
+  }
 }
 
 const productService = new ProductService();

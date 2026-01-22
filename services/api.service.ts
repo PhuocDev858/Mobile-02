@@ -3,7 +3,7 @@
  * Xử lý tất cả các HTTP requests
  */
 
-import API_CONFIG from '@/config/api';
+import { API_CONFIG } from '@/config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface RequestConfig {

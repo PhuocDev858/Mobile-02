@@ -9,7 +9,7 @@ import { SelectedCategoryProvider } from '@/context/SelectedCategoryContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export const unstable_settings = {
-  anchor: '/(signup)',
+  initialRouteName: '(tabs)',
 };
 
 export default function RootLayout() {
@@ -20,10 +20,10 @@ export default function RootLayout() {
       <ProductDataProvider>
         <SelectedCategoryProvider>
           <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <Stack>
+            <Stack screenOptions={{ animationEnabled: false }}>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="login" options={{ headerShown: false }} />
               <Stack.Screen name="signup" options={{ headerShown: false }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="forgotPass" options={{ headerShown: false }} />
               <Stack.Screen name="inputOTP" options={{ headerShown: false }} />
               <Stack.Screen name="reset-password" options={{ headerShown: false }} />
@@ -34,6 +34,7 @@ export default function RootLayout() {
               <Stack.Screen name="products" options={{ headerShown: false }} />
               <Stack.Screen name="checkout" options={{ headerShown: false }} />
               <Stack.Screen name="payment-info" options={{ headerShown: false }} />
+              <Stack.Screen name="admin" options={{ headerShown: false }} />
             </Stack>
             <StatusBar style="auto" />
           </ThemeProvider>

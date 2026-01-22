@@ -61,7 +61,9 @@ export default function AccountScreen() {
           onPress: async () => {
             try {
               await authService.logout();
-              router.replace('/login');
+              setUserInfo(null);
+              setLoading(false);
+              Alert.alert('Thành công', 'Bạn đã đăng xuất thành công');
             } catch (error) {
               Alert.alert('Lỗi', 'Không thể đăng xuất');
             }
@@ -78,7 +80,11 @@ export default function AccountScreen() {
       title: 'Đơn hàng của tôi',
       icon: '📦',
       onPress: () => {
-        router.push('/orders');
+        if (!userInfo) {
+          Alert.alert('Thông báo', 'Quý khách vui lòng đăng nhập/đăng ký tài khoản để sử dụng chức năng này');
+          return;
+        }
+        Alert.alert('Thông báo', 'Tính năng đơn hàng sẽ sớm có');
       },
     },
     {
@@ -86,6 +92,10 @@ export default function AccountScreen() {
       title: 'Địa chỉ giao hàng',
       icon: '📍',
       onPress: () => {
+        if (!userInfo) {
+          Alert.alert('Thông báo', 'Quý khách vui lòng đăng nhập/đăng ký tài khoản để sử dụng chức năng này');
+          return;
+        }
         Alert.alert('Thông báo', 'Tính năng quản lý địa chỉ sẽ sớm có');
       },
     },
@@ -94,6 +104,10 @@ export default function AccountScreen() {
       title: 'Yêu thích',
       icon: '❤️',
       onPress: () => {
+        if (!userInfo) {
+          Alert.alert('Thông báo', 'Quý khách vui lòng đăng nhập/đăng ký tài khoản để sử dụng chức năng này');
+          return;
+        }
         Alert.alert('Thông báo', 'Tính năng yêu thích sẽ sớm có');
       },
     },
@@ -102,6 +116,10 @@ export default function AccountScreen() {
       title: 'Cài đặt',
       icon: '⚙️',
       onPress: () => {
+        if (!userInfo) {
+          Alert.alert('Thông báo', 'Quý khách vui lòng đăng nhập/đăng ký tài khoản để sử dụng chức năng này');
+          return;
+        }
         Alert.alert('Thông báo', 'Tính năng cài đặt sẽ sớm có');
       },
     },
@@ -110,6 +128,10 @@ export default function AccountScreen() {
       title: 'Trợ giúp & Hỗ trợ',
       icon: '❓',
       onPress: () => {
+        if (!userInfo) {
+          Alert.alert('Thông báo', 'Quý khách vui lòng đăng nhập/đăng ký tài khoản để sử dụng chức năng này');
+          return;
+        }
         Alert.alert('Thông báo', 'Tính năng hỗ trợ sẽ sớm có');
       },
     },
@@ -218,14 +240,28 @@ export default function AccountScreen() {
             </View>
           </>
         ) : (
-          <View style={styles.emptyContainer}>
-            <ThemedText style={[styles.emptyText, { color: Colors[colorScheme].text }]}>
-              Không thể tải thông tin tài khoản
+          <View style={styles.notLoggedInContainer}>
+            <ThemedText style={[styles.notLoggedInTitle, { color: Colors[colorScheme].text }]}>
+              👤 Tài khoản của tôi
             </ThemedText>
+            <ThemedText style={[styles.notLoggedInText, { color: Colors[colorScheme].tabIconDefault }]}>
+              Đăng nhập để truy cập tài khoản, theo dõi đơn hàng và lưu sản phẩm yêu thích
+            </ThemedText>
+
+            {/* Login Button */}
             <TouchableOpacity
-              style={[styles.retryButton, { backgroundColor: Colors[colorScheme].tint }]}
-              onPress={() => fetchUserData()}>
-              <ThemedText style={styles.retryButtonText}>Thử lại</ThemedText>
+              style={[styles.loginButton, { backgroundColor: Colors[colorScheme].tint }]}
+              onPress={() => router.push('/login')}>
+              <ThemedText style={styles.loginButtonText}>🔑 Đăng nhập</ThemedText>
+            </TouchableOpacity>
+
+            {/* Signup Button */}
+            <TouchableOpacity
+              style={[styles.signupButton, { borderColor: Colors[colorScheme].tint, borderWidth: 1.5 }]}
+              onPress={() => router.push('/signup')}>
+              <ThemedText style={[styles.signupButtonText, { color: Colors[colorScheme].tint }]}>
+                ✏️ Đăng ký
+              </ThemedText>
             </TouchableOpacity>
           </View>
         )}
@@ -362,6 +398,54 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     fontFamily: 'monospace',
+  },
+  notLoggedInContainer: {
+    minHeight: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 24,
+  },
+  notLoggedInTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  notLoggedInText: {
+    fontSize: 15,
+    textAlign: 'center',
+    marginBottom: 40,
+    lineHeight: 22,
+    maxWidth: 280,
+  },
+  loginButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    width: '100%',
+    maxWidth: 320,
+  },
+  loginButtonText: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  signupButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 320,
+  },
+  signupButtonText: {
+    fontSize: 17,
+    fontWeight: '700',
   },
   emptyContainer: {
     flex: 1,
