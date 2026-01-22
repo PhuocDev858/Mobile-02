@@ -14,9 +14,10 @@ import {
 import { Product, useAdmin } from '../../context/admin/AdminContext';
 
 export default function ProductManagement() {
-  const { products, addProduct, updateProduct, deleteProduct, loading } = useAdmin();
+  const { products, categories, addProduct, updateProduct, deleteProduct, loading } = useAdmin();
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
@@ -68,7 +69,7 @@ export default function ProductManagement() {
 
   const handleSubmit = () => {
     if (!formData.name.trim() || !formData.category.trim() || !formData.price) {
-      alert('Vui lòng điền tất cả các trường bắt buộc');
+      Alert.alert('Lỗi', 'Vui lòng điền tất cả các trường bắt buộc');
       return;
     }
 
@@ -332,16 +333,36 @@ export default function ProductManagement() {
 
               {/* Category */}
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Danh mục</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Nhập danh mục"
-                  value={formData.category}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, category: text })
-                  }
-                  placeholderTextColor="#999"
-                />
+                <Text style={styles.label}>Danh mục *</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.input,
+                    { paddingHorizontal: 12, justifyContent: 'center', height: 48 },
+                  ]}
+                  onPress={() => setShowCategoryDropdown(true)}
+                >
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: formData.category ? '#1f2937' : '#999',
+                        fontSize: 14,
+                      }}
+                    >
+                      {formData.category || 'Chọn danh mục'}
+                    </Text>
+                    <Ionicons
+                      name="chevron-down"
+                      size={20}
+                      color="#7c3aed"
+                    />
+                  </View>
+                </TouchableOpacity>
               </View>
 
               {/* Price */}
@@ -409,6 +430,68 @@ export default function ProductManagement() {
                 </Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Category Picker Modal */}
+      <Modal
+        visible={showCategoryDropdown}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCategoryDropdown(false)}
+      >
+        <View style={styles.categoryPickerOverlay}>
+          <View style={styles.categoryPickerContainer}>
+            <View style={styles.categoryPickerHeader}>
+              <Text style={styles.categoryPickerTitle}>Chọn Danh mục</Text>
+              <TouchableOpacity onPress={() => setShowCategoryDropdown(false)}>
+                <Ionicons name="close" size={24} color="#1f2937" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.categoryPickerList}>
+              {categories.length > 0 ? (
+                categories.map((cat) => (
+                  <TouchableOpacity
+                    key={cat.id}
+                    style={[
+                      styles.categoryPickerItem,
+                      formData.category === cat.name && styles.categoryPickerItemActive,
+                    ]}
+                    onPress={() => {
+                      setFormData({ ...formData, category: cat.name });
+                      setShowCategoryDropdown(false);
+                    }}
+                  >
+                    <Text style={styles.categoryPickerItemIcon}>{cat.icon}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[
+                          styles.categoryPickerItemName,
+                          formData.category === cat.name && styles.categoryPickerItemNameActive,
+                        ]}
+                      >
+                        {cat.name}
+                      </Text>
+                      {cat.productCount !== undefined && (
+                        <Text style={styles.categoryPickerItemCount}>
+                          {cat.productCount} sản phẩm
+                        </Text>
+                      )}
+                    </View>
+                    {formData.category === cat.name && (
+                      <Ionicons name="checkmark-circle" size={24} color="#7c3aed" />
+                    )}
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <View style={styles.noCategoriesContainer}>
+                  <Ionicons name="folder-outline" size={48} color="#9ca3af" />
+                  <Text style={styles.noCategoriesText}>Không có danh mục</Text>
+                </View>
+              )}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -708,6 +791,107 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#fff',
+  },
+  categoryPickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  categoryPickerContainer: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    maxHeight: '80%',
+    paddingTop: 0,
+  },
+  categoryPickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  categoryPickerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1f2937',
+  },
+  categoryPickerList: {
+    flex: 1,
+  },
+  categoryPickerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  categoryPickerItemActive: {
+    backgroundColor: '#f3f4f6',
+  },
+  categoryPickerItemIcon: {
+    fontSize: 28,
+    marginRight: 12,
+  },
+  categoryPickerItemName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#1f2937',
+  },
+  categoryPickerItemNameActive: {
+    color: '#7c3aed',
+    fontWeight: '600',
+  },
+  categoryPickerItemCount: {
+    fontSize: 12,
+    color: '#9ca3af',
+    marginTop: 4,
+  },
+  noCategoriesContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    top: 48,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    maxHeight: 200,
+    zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  dropdownItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: '#1f2937',
+  },
+  dropdownItemTextActive: {
+    color: '#7c3aed',
+    fontWeight: '600',
+  },
+  noCategoriesText: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    color: '#9ca3af',
+    textAlign: 'center',
   },
   paginationContainer: {
     flexDirection: 'row',
