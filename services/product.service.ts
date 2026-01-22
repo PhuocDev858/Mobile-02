@@ -45,7 +45,7 @@ class ProductService {
         throw new Error(response.error);
       }
 
-      return response.data;
+      return response.data as ProductListResponse;
     } catch (error: any) {
       console.error('Get all products error:', error);
       throw new Error(error.message || 'Không thể tải danh sách sản phẩm.');
@@ -63,7 +63,7 @@ class ProductService {
         throw new Error(response.error);
       }
 
-      return response.data;
+      return response.data as Product[];
     } catch (error: any) {
       console.error('Get featured products error:', error);
       throw new Error(error.message || 'Không thể tải sản phẩm nổi bật.');
@@ -81,8 +81,7 @@ class ProductService {
         throw new Error(response.error);
       }
 
-      // Backend trả về {data: {...}, success, message}, cần lấy data bên trong
-      return response.data?.data || response.data;
+      return (response.data as any)?.data || response.data as Product;
     } catch (error: any) {
       console.error('Get product by ID error:', error);
       throw new Error(error.message || 'Không thể tải thông tin sản phẩm.');
@@ -100,7 +99,7 @@ class ProductService {
         throw new Error(response.error);
       }
 
-      return response.data;
+      return response.data as Category[];
     } catch (error: any) {
       console.error('Get categories error:', error);
       throw new Error(error.message || 'Không thể tải danh mục sản phẩm.');
@@ -131,16 +130,24 @@ class ProductService {
    */
   async createProduct(product: any): Promise<Product | null> {
     try {
-      const response = await apiService.post('/products', product);
+      // Log để debug
+      console.log('🔍 Creating product with data:', product);
+      
+      // Map stock -> stockQuantity (camelCase) cho backend
+      const payload = {
+        ...product,
+        stockQuantity: product.stock, // Backend expect 'stockQuantity' (camelCase)
+      };
+      delete payload.stock; // Xóa field stock để không bị conflict
+      
+      console.log('📤 Payload sent to backend:', payload);
+      const response = await apiService.post('/products', payload);
 
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      return response.data;
+      console.log('✅ Create product response:', response);
+      return response.data as Product;
     } catch (error: any) {
-      console.error('Create product error:', error);
-      return null;
+      console.error('❌ Create product error:', error);
+      throw error;
     }
   }
 
@@ -149,16 +156,23 @@ class ProductService {
    */
   async updateProduct(id: string, updates: any): Promise<Product | null> {
     try {
-      const response = await apiService.put(`/products/${id}`, updates);
+      console.log('🔍 Updating product with data:', updates);
+      
+      // Map stock -> stockQuantity (camelCase) cho backend
+      const payload = {
+        ...updates,
+        stockQuantity: updates.stock, // Backend expect 'stockQuantity' (camelCase)
+      };
+      delete payload.stock; // Xóa field stock để không bị conflict
+      
+      console.log('📤 Payload sent to backend:', payload);
+      const response = await apiService.put(`/products/${id}`, payload);
 
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      return response.data;
+      console.log('✅ Update product response:', response);
+      return response.data as Product;
     } catch (error: any) {
       console.error('Update product error:', error);
-      return null;
+      throw error;
     }
   }
 

@@ -73,11 +73,17 @@ export default function ProductManagement() {
       return;
     }
 
+    const stock = parseInt(formData.stock) || 0;
+    if (stock < 0) {
+      Alert.alert('Lỗi', 'Số lượng tồn kho không được âm');
+      return;
+    }
+
     const data = {
       name: formData.name,
       category: formData.category,
       price: parseFloat(formData.price),
-      stock: parseInt(formData.stock) || 0,
+      stock: stock,
       image: formData.image,
       description: formData.description,
     };

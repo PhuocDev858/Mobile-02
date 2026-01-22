@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { Alert } from 'react-native';
 import categoryService from '../../services/category.service';
 import customerService from '../../services/customer.service';
 import orderService from '../../services/order.service';
@@ -226,6 +227,37 @@ function getMockCategories(): Category[] {
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
+// Helper function để map stock từ backend
+const mapProductFromBackend = (p: any) => {
+  // Log raw data để debug
+  console.log(`📝 Raw product data for "${p.name}":`, {
+    stockQuantity: p.stockQuantity,
+    stock_quantity: p.stock_quantity,
+    quantity: p.quantity,
+    stock: p.stock,
+  });
+
+  // Try to get stock từ nhiều field khác nhau (priority order)
+  const stockValue = 
+    p.stockQuantity !== undefined ? p.stockQuantity :      // Backend gửi stockQuantity (camelCase)
+    p.stock_quantity !== undefined ? p.stock_quantity :    // Hoặc stock_quantity (snake_case)
+    p.quantity !== undefined ? p.quantity :                 // Hoặc quantity
+    p.stock !== undefined ? p.stock :                       // Hoặc stock
+    100;                                                    // Fallback
+
+  console.log(`✅ Mapped stock for "${p.name}": ${stockValue}`);
+
+  return {
+    id: p.id || p._id,
+    name: p.name || 'Unknown',
+    category: p.category || 'Unknown',
+    price: p.price || 0,
+    stock: stockValue,
+    image: p.image || '',
+    description: p.description || '',
+  };
+};
+
 export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -246,29 +278,17 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       // Load products từ backend
       console.log('📦 Tải sản phẩm...');
       const productsData = await productService.getAllProducts();
-      console.log('📦 Dữ liệu sản phẩm:', productsData);
+      console.log('📦 Raw dữ liệu sản phẩm từ backend:', productsData);
       
       let formattedProducts: Product[] = [];
       if (productsData?.products && Array.isArray(productsData.products)) {
-        formattedProducts = productsData.products.map((p: any) => ({
-          id: p.id || p._id,
-          name: p.name || 'Unknown',
-          category: p.category || 'Unknown',
-          price: p.price || 0,
-          stock: p.stock || 100,
-          image: p.image || '',
-          description: p.description || '',
-        }));
+        console.log('📦 Parsing products array từ productsData.products');
+        formattedProducts = productsData.products.map(mapProductFromBackend);
       } else if (Array.isArray(productsData)) {
-        formattedProducts = productsData.map((p: any) => ({
-          id: p.id || p._id,
-          name: p.name || 'Unknown',
-          category: p.category || 'Unknown',
-          price: p.price || 0,
-          stock: p.stock || 100,
-          image: p.image || '',
-          description: p.description || '',
-        }));
+        console.log('📦 Parsing products array trực tiếp');
+        formattedProducts = productsData.map(mapProductFromBackend);
+      } else {
+        console.warn('⚠️ Unexpected products data format:', productsData);
       }
       console.log('✅ Sản phẩm đã format:', formattedProducts);
       setProducts(formattedProducts);
@@ -339,23 +359,43 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
   const addProduct = async (product: Omit<Product, 'id'>) => {
     try {
+      console.log('📦 Adding product:', product);
       const newProduct = await productService.createProduct(product as any);
       if (newProduct) {
-        setProducts([...products, newProduct]);
+        // Map response để chắc chắn stock được set đúng
+        const mappedProduct: Product = {
+          ...newProduct,
+          stock: (newProduct as any).stock_quantity !== undefined ? (newProduct as any).stock_quantity : newProduct.stock,
+        };
+        console.log('✅ Mapped new product:', mappedProduct);
+        setProducts([...products, mappedProduct]);
+        Alert.alert('Thành công', 'Thêm sản phẩm thành công');
       }
-    } catch (error) {
-      console.error('Error adding product:', error);
+    } catch (error: any) {
+      console.error('❌ Error adding product:', error);
+      const errorMessage = error.message || 'Không thể thêm sản phẩm';
+      Alert.alert('Lỗi', errorMessage);
     }
   };
 
   const updateProduct = async (id: string, updates: Partial<Product>) => {
     try {
+      console.log('📦 Updating product:', id, updates);
       const updated = await productService.updateProduct(id, updates as any);
       if (updated) {
-        setProducts(products.map(p => (p.id === id ? { ...p, ...updates } : p)));
+        // Map response để chắc chắn stock được set đúng
+        const mappedUpdates = {
+          ...updates,
+          stock: (updated as any).stock_quantity !== undefined ? (updated as any).stock_quantity : updated.stock,
+        };
+        console.log('✅ Mapped updates:', mappedUpdates);
+        setProducts(products.map(p => (p.id === id ? { ...p, ...mappedUpdates } : p)));
+        Alert.alert('Thành công', 'Cập nhật sản phẩm thành công');
       }
-    } catch (error) {
-      console.error('Error updating product:', error);
+    } catch (error: any) {
+      console.error('❌ Error updating product:', error);
+      const errorMessage = error.message || 'Không thể cập nhật sản phẩm';
+      Alert.alert('Lỗi', errorMessage);
     }
   };
 
