@@ -101,13 +101,22 @@ export default function ProductsScreen() {
       return stock > 0;
     });
 
-    // Filter by search query
+    // Filter by search query - Ưu tiên tên sản phẩm
     if (searchQuery.trim() !== '') {
       const query = searchQuery.toLowerCase();
-      result = result.filter((product) =>
-        product.name.toLowerCase().includes(query) ||
+      
+      // Chia thành 2 nhóm: match tên và match mô tả
+      const nameMatches = result.filter((product) =>
+        product.name.toLowerCase().includes(query)
+      );
+      
+      const descriptionMatches = result.filter((product) =>
+        !product.name.toLowerCase().includes(query) && // Loại bỏ những đã match tên
         product.description.toLowerCase().includes(query)
       );
+      
+      // Ghép 2 nhóm: tên trước, mô tả sau
+      result = [...nameMatches, ...descriptionMatches];
     }
 
     // Filter by category

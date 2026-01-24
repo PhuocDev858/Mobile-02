@@ -43,7 +43,7 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   
   // Lấy dữ liệu từ shared context
-  const { categories, featuredProducts, loading, refreshData } = useProductData();
+  const { categories, featuredProducts, allProducts, loading, refreshData } = useProductData();
   const [refreshing, setRefreshing] = useState(false);
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -74,23 +74,33 @@ export default function HomeScreen() {
   useEffect(() => {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      const suggestions = featuredProducts.filter((product) =>
+      const suggestions = allProducts.filter((product) =>
         product.name.toLowerCase().includes(query)
       );
       setSuggestions(suggestions);
     } else {
       setSuggestions([]);
     }
-  }, [searchQuery, featuredProducts]);
+  }, [searchQuery, allProducts]);
 
   // Thực hiện tìm kiếm đầy đủ khi người dùng bấm nút tìm kiếm
   const handleSearch = () => {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      const results = featuredProducts.filter((product) =>
-        product.name.toLowerCase().includes(query) ||
+      
+      // Chia thành 2 nhóm: match tên và match mô tả
+      const nameMatches = allProducts.filter((product) =>
+        product.name.toLowerCase().includes(query)
+      );
+      
+      const descriptionMatches = allProducts.filter((product) =>
+        !product.name.toLowerCase().includes(query) && // Loại bỏ những đã match tên
         product.description.toLowerCase().includes(query)
       );
+      
+      // Ghép 2 nhóm: tên trước, mô tả sau
+      const results = [...nameMatches, ...descriptionMatches];
+      
       setSearchResults(results);
       setIsSearching(true);
       setSuggestions([]);
