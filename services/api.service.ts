@@ -131,8 +131,8 @@ class ApiService {
   /**
    * GET request
    */
-  async get<T>(endpoint: string, headers?: Record<string, string>) {
-    return this.request<T>(endpoint, { method: 'GET', headers });
+  async get<T>(endpoint: string, headers?: Record<string, string>, skipAuth?: boolean) {
+    return this.request<T>(endpoint, { method: 'GET', headers, skipAuth });
   }
 
   /**

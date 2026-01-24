@@ -39,7 +39,7 @@ class ProductService {
       if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
 
       const url = `/products${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      const response = await apiService.get(url);
+      const response = await apiService.get(url, {}, true); // skipAuth: true for public endpoint
 
       if (response.error) {
         throw new Error(response.error);
@@ -57,7 +57,7 @@ class ProductService {
    */
   async getFeaturedProducts(limit: number = 4): Promise<Product[]> {
     try {
-      const response = await apiService.get(`/products/featured?limit=${limit}`);
+      const response = await apiService.get(`/products/featured?limit=${limit}`, {}, true); // skipAuth: true for public endpoint
 
       if (response.error) {
         throw new Error(response.error);
@@ -75,7 +75,7 @@ class ProductService {
    */
   async getProductById(id: string): Promise<Product> {
     try {
-      const response = await apiService.get(`/products/${id}`);
+      const response = await apiService.get(`/products/${id}`, {}, true); // skipAuth: true for public endpoint
 
       if (response.error) {
         throw new Error(response.error);
@@ -93,7 +93,7 @@ class ProductService {
    */
   async getCategories(): Promise<Category[]> {
     try {
-      const response = await apiService.get('/categories');
+      const response = await apiService.get('/categories', {}, true); // skipAuth: true for public endpoint
 
       if (response.error) {
         throw new Error(response.error);
@@ -136,9 +136,15 @@ class ProductService {
       // Map stock -> stockQuantity (camelCase) cho backend
       const payload = {
         ...product,
-        stockQuantity: product.stock, // Backend expect 'stockQuantity' (camelCase)
+        stockQuantity: product.stock !== undefined ? product.stock : 0, // Backend expect 'stockQuantity' (camelCase)
       };
       delete payload.stock; // Xóa field stock để không bị conflict
+      
+      // Nếu category là number (ID), rename thành categoryId
+      if (typeof payload.category === 'number') {
+        payload.categoryId = payload.category;
+        delete payload.category;
+      }
       
       console.log('📤 Payload sent to backend:', payload);
       const response = await apiService.post('/products', payload);
@@ -161,9 +167,15 @@ class ProductService {
       // Map stock -> stockQuantity (camelCase) cho backend
       const payload = {
         ...updates,
-        stockQuantity: updates.stock, // Backend expect 'stockQuantity' (camelCase)
+        stockQuantity: updates.stock !== undefined ? updates.stock : undefined, // Backend expect 'stockQuantity' (camelCase)
       };
       delete payload.stock; // Xóa field stock để không bị conflict
+      
+      // Nếu category là number (ID), rename thành categoryId
+      if (typeof payload.category === 'number') {
+        payload.categoryId = payload.category;
+        delete payload.category;
+      }
       
       console.log('📤 Payload sent to backend:', payload);
       const response = await apiService.put(`/products/${id}`, payload);

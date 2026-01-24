@@ -4,6 +4,7 @@ import { ActivityIndicator, Alert, SafeAreaView, ScrollView, StyleSheet, Touchab
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/theme';
+import { apiService } from '@/services/api.service';
 import { authService } from '@/services/auth.service';
 
 interface UserInfo {
@@ -33,6 +34,16 @@ export default function AccountScreen() {
   const fetchUserData = async () => {
     try {
       setLoading(true);
+      
+      // ✅ Kiểm tra token trước khi gọi API
+      const token = await apiService.getToken();
+      if (!token) {
+        console.log('ℹ️ Chưa đăng nhập, skip fetch user data');
+        setUserInfo(null);
+        setLoading(false);
+        return;
+      }
+      
       const response = await authService.getCurrentUser();
       
       const userData = response.data?.data || response.data || response;
@@ -42,6 +53,11 @@ export default function AccountScreen() {
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
+      // Nếu lỗi 401, xóa token và set userInfo = null
+      if (error instanceof Error && error.message?.includes('401')) {
+        await apiService.removeToken();
+        setUserInfo(null);
+      }
     } finally {
       setLoading(false);
     }

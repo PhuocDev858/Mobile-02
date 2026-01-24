@@ -1,6 +1,6 @@
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 
 import paymentService, { PaymentMethod } from '@/services/payment.service';
+import { apiService } from '@/services/api.service';
 
 export default function CheckoutScreen() {
   const router = useRouter();
@@ -24,6 +25,17 @@ export default function CheckoutScreen() {
   const [shippingAddress, setShippingAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
+  const [userToken, setUserToken] = useState<string | null>(null);
+
+  // Kiểm tra token khi component mount
+  useEffect(() => {
+    checkUserLogin();
+  }, []);
+
+  const checkUserLogin = async () => {
+    const token = await apiService.getToken();
+    setUserToken(token);
+  };
 
   const paymentMethods = paymentService.getPaymentMethods();
   const totalAmount = getTotalPrice();
@@ -36,6 +48,25 @@ export default function CheckoutScreen() {
   };
 
   const handlePayment = async () => {
+    // ✅ Kiểm tra đã đăng nhập chưa
+    if (!userToken) {
+      Alert.alert(
+        'Yêu cầu đăng nhập',
+        'Bạn cần đăng nhập để sử dụng chức năng thanh toán',
+        [
+          {
+            text: 'Hủy',
+            style: 'cancel',
+          },
+          {
+            text: 'Đi đến đăng nhập',
+            onPress: () => router.push('/login'),
+          },
+        ]
+      );
+      return;
+    }
+
     // Kiểm tra thông tin
     if (!selectedPaymentMethod) {
       Alert.alert('Thông báo', 'Vui lòng chọn phương thức thanh toán');

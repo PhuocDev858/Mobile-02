@@ -24,6 +24,7 @@ export default function ProductManagement() {
   const [formData, setFormData] = useState({
     name: '',
     category: '',
+    categoryId: '', // Thêm category ID
     price: '',
     stock: '',
     image: '',
@@ -31,9 +32,10 @@ export default function ProductManagement() {
   });
 
   const filteredProducts = products.filter((p) => {
+    const categoryName = typeof p.category === 'string' ? p.category : (p.category?.name || '');
     const matchesSearch =
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.category.toLowerCase().includes(searchTerm.toLowerCase());
+      (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      categoryName.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });
 
@@ -45,19 +47,23 @@ export default function ProductManagement() {
   const handleOpenModal = (product?: Product) => {
     if (product) {
       setEditingProduct(product);
+      const categoryName = typeof product.category === 'string' ? product.category : product.category?.name || '';
+      const categoryId = typeof product.category === 'string' ? '' : product.category?.id || '';
       setFormData({
-        name: product.name,
-        category: product.category,
-        price: product.price.toString(),
-        stock: product.stock.toString(),
-        image: product.image,
-        description: product.description,
+        name: product.name || '',
+        category: categoryName,
+        categoryId: categoryId,
+        price: (product.price || 0).toString(),
+        stock: (product.stock !== undefined ? product.stock : 0).toString(),
+        image: product.image || '',
+        description: product.description || '',
       });
     } else {
       setEditingProduct(null);
       setFormData({
         name: '',
         category: '',
+        categoryId: '',
         price: '',
         stock: '',
         image: '',
@@ -81,7 +87,7 @@ export default function ProductManagement() {
 
     const data = {
       name: formData.name,
-      category: formData.category,
+      category: formData.categoryId || formData.category, // Gửi ID nếu có, nếu không thì name
       price: parseFloat(formData.price),
       stock: stock,
       image: formData.image,
@@ -201,7 +207,9 @@ export default function ProductManagement() {
                       <Text style={styles.productName} numberOfLines={2}>
                         {product.name}
                       </Text>
-                      <Text style={styles.productCategory}>{product.category}</Text>
+                      <Text style={styles.productCategory}>
+                        {typeof product.category === 'string' ? product.category : product.category?.name}
+                      </Text>
                     </View>
                     <View
                       style={[styles.statusBadge, { backgroundColor: stockStatus.bg }]}
@@ -463,10 +471,10 @@ export default function ProductManagement() {
                     key={cat.id}
                     style={[
                       styles.categoryPickerItem,
-                      formData.category === cat.name && styles.categoryPickerItemActive,
+                      formData.categoryId === cat.id && styles.categoryPickerItemActive,
                     ]}
                     onPress={() => {
-                      setFormData({ ...formData, category: cat.name });
+                      setFormData({ ...formData, category: cat.name, categoryId: cat.id });
                       setShowCategoryDropdown(false);
                     }}
                   >
@@ -475,7 +483,7 @@ export default function ProductManagement() {
                       <Text
                         style={[
                           styles.categoryPickerItemName,
-                          formData.category === cat.name && styles.categoryPickerItemNameActive,
+                          formData.categoryId === cat.id && styles.categoryPickerItemNameActive,
                         ]}
                       >
                         {cat.name}
@@ -486,7 +494,7 @@ export default function ProductManagement() {
                         </Text>
                       )}
                     </View>
-                    {formData.category === cat.name && (
+                    {formData.categoryId === cat.id && (
                       <Ionicons name="checkmark-circle" size={24} color="#7c3aed" />
                     )}
                   </TouchableOpacity>

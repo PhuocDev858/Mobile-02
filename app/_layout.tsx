@@ -9,7 +9,7 @@ import { SelectedCategoryProvider } from '@/context/SelectedCategoryContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export const unstable_settings = {
-  initialRouteName: '(tabs)',
+  initialRouteName: 'home',
 };
 
 export default function RootLayout() {

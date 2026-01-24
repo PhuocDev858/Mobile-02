@@ -31,8 +31,8 @@ export default function CategoryManagement() {
   // Lọc danh mục
   const filteredCategories = categories.filter(
     cat =>
-      cat.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      cat.slug?.toLowerCase().includes(searchText.toLowerCase())
+      (cat.name || '').toLowerCase().includes(searchText.toLowerCase()) ||
+      (cat.slug || '').toLowerCase().includes(searchText.toLowerCase())
   );
 
   // Pagination
@@ -162,7 +162,7 @@ export default function CategoryManagement() {
                 <Text style={styles.iconText}>{item.icon || '📁'}</Text>
               </View>
               <View style={styles.details}>
-                <Text style={styles.categoryName}>{item.name}</Text>
+                <Text style={styles.categoryName}>{item.name || 'N/A'}</Text>
                 <Text style={styles.categorySlug}>{item.slug || 'Không có'}</Text>
                 {item.description && (
                   <Text style={styles.categoryDesc} numberOfLines={1}>
@@ -185,7 +185,7 @@ export default function CategoryManagement() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.iconButton}
-                onPress={() => handleDelete(item.id, item.name)}
+                onPress={() => handleDelete(item.id, item.name || 'N/A')}
               >
                 <Ionicons name="trash" size={20} color="#ef4444" />
               </TouchableOpacity>

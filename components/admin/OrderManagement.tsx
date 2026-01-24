@@ -23,7 +23,7 @@ export default function OrderManagement() {
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       String(order.id).toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer.toLowerCase().includes(searchTerm.toLowerCase());
+      (order.customer || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'all' || order.status === filterStatus;
     return matchesSearch && matchesFilter;
   });

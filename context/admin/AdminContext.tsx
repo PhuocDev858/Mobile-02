@@ -9,7 +9,7 @@ import productService from '../../services/product.service';
 export interface Product {
   id: string;
   name: string;
-  category: string;
+  category: string | Category;
   price: number;
   stock: number;
   image: string;
@@ -231,6 +231,9 @@ const AdminContext = createContext<AdminContextType | undefined>(undefined);
 const mapProductFromBackend = (p: any) => {
   // Log raw data để debug
   console.log(`📝 Raw product data for "${p.name}":`, {
+    category: p.category,
+    categoryId: p.categoryId,
+    category_id: p.category_id,
     stockQuantity: p.stockQuantity,
     stock_quantity: p.stock_quantity,
     quantity: p.quantity,
@@ -245,12 +248,31 @@ const mapProductFromBackend = (p: any) => {
     p.stock !== undefined ? p.stock :                       // Hoặc stock
     100;                                                    // Fallback
 
-  console.log(`✅ Mapped stock for "${p.name}": ${stockValue}`);
+  // Handle category - có thể là object, string, hoặc ID
+  let categoryValue: string | Category = 'Unknown';
+  
+  if (p.category) {
+    // Nếu category đã là object (có id, name)
+    if (typeof p.category === 'object' && p.category.id) {
+      categoryValue = p.category as Category;
+    } else if (typeof p.category === 'string') {
+      categoryValue = p.category;
+    }
+  } else if (p.categoryId || p.category_id) {
+    // Nếu chỉ có categoryId (số hoặc string)
+    const catId = p.categoryId || p.category_id;
+    categoryValue = {
+      id: String(catId),
+      name: `Category ${catId}`,
+    } as Category;
+  }
+
+  console.log(`✅ Mapped stock for "${p.name}": ${stockValue}, category:`, categoryValue);
 
   return {
     id: p.id || p._id,
     name: p.name || 'Unknown',
-    category: p.category || 'Unknown',
+    category: categoryValue,
     price: p.price || 0,
     stock: stockValue,
     image: p.image || '',
@@ -331,15 +353,23 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       console.log('📂 Tải danh mục...');
       const categoriesData = await categoryService.getCategories();
       console.log('📂 Dữ liệu danh mục:', categoriesData);
-      const formattedCategories: Category[] = (categoriesData || []).map((cat: any) => ({
-        id: cat._id || cat.id || Math.random().toString(),
-        name: cat.name || 'N/A',
-        slug: cat.slug || '',
-        icon: cat.icon || '📁',
-        image: cat.image || '',
-        productCount: cat.productCount || 0,
-        description: cat.description || '',
-      }));
+      const formattedCategories: Category[] = (categoriesData || []).map((cat: any) => {
+        // Tính productCount dựa trên products trong danh mục
+        const productCountInCategory = formattedProducts.filter(p => {
+          const prodCategoryName = typeof p.category === 'string' ? p.category : p.category?.name;
+          return prodCategoryName === cat.name || prodCategoryName === cat.slug;
+        }).length;
+        
+        return {
+          id: cat._id || cat.id || Math.random().toString(),
+          name: cat.name || 'N/A',
+          slug: cat.slug || '',
+          icon: cat.icon || '📁',
+          image: cat.image || '',
+          productCount: productCountInCategory > 0 ? productCountInCategory : (cat.productCount || 0),
+          description: cat.description || '',
+        };
+      });
       console.log('✅ Danh mục đã format:', formattedCategories);
       setCategories(formattedCategories);
 
@@ -368,7 +398,26 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           stock: (newProduct as any).stock_quantity !== undefined ? (newProduct as any).stock_quantity : newProduct.stock,
         };
         console.log('✅ Mapped new product:', mappedProduct);
-        setProducts([...products, mappedProduct]);
+        setProducts(prevProducts => [...prevProducts, mappedProduct]);
+        
+        // Update productCount của category
+        const categoryId = (product.category as any)?.id || (typeof product.category === 'string' ? product.category : '');
+        const categoryName = typeof product.category === 'string' ? product.category : product.category?.name;
+        console.log('🔍 Looking for category ID:', categoryId, 'or name:', categoryName, 'in categories:', categories.map(c => ({ id: c.id, name: c.name })));
+        
+        setCategories(prevCategories =>
+          prevCategories.map(cat => {
+            const isMatch = cat.id === categoryId || cat.name === categoryName;
+            console.log(`🔍 Checking category "${cat.name}" (${cat.id}) - Match: ${isMatch}`);
+            if (isMatch) {
+              const updated = { ...cat, productCount: (cat.productCount || 0) + 1 };
+              console.log(`✅ Updated category "${cat.name}" productCount to`, updated.productCount);
+              return updated;
+            }
+            return cat;
+          })
+        );
+        
         Alert.alert('Thành công', 'Thêm sản phẩm thành công');
       }
     } catch (error: any) {
@@ -381,15 +430,97 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const updateProduct = async (id: string, updates: Partial<Product>) => {
     try {
       console.log('📦 Updating product:', id, updates);
+      
+      // Get old product to check if category changed
+      const oldProduct = products.find(p => p.id === id);
+      const oldCategoryId = (oldProduct && typeof oldProduct.category !== 'string') ? (oldProduct.category as any).id : '';
+      const oldCategoryName = (oldProduct && typeof oldProduct.category === 'string') ? oldProduct.category : ((oldProduct && typeof oldProduct.category !== 'string') ? (oldProduct.category as any).name : '');
+      
       const updated = await productService.updateProduct(id, updates as any);
       if (updated) {
+        console.log('📦 Updated response:', updated);
+        
+        // Xử lý category từ updates - có thể là ID hoặc object
+        let categoryToStore = updates.category;
+        let newCategoryId = '';
+        let newCategoryName = '';
+        
+        if (updates.category) {
+          if (typeof updates.category === 'string') {
+            newCategoryName = updates.category;
+          } else if (typeof updates.category === 'number') {
+            // Category là ID (số)
+            newCategoryId = String(updates.category);
+            // Tìm category name từ categories array
+            const foundCategory = categories.find(c => c.id === newCategoryId);
+            if (foundCategory) {
+              newCategoryName = foundCategory.name;
+              categoryToStore = foundCategory;
+            } else {
+              // Nếu không tìm được, vẫn set categoryToStore (có thể là ID)
+              console.warn('⚠️ Category ID not found:', newCategoryId);
+              categoryToStore = updates.category;
+            }
+          } else {
+            // Category là object
+            newCategoryId = (updates.category as any).id;
+            newCategoryName = (updates.category as any).name;
+          }
+        }
+        
         // Map response để chắc chắn stock được set đúng
-        const mappedUpdates = {
-          ...updates,
-          stock: (updated as any).stock_quantity !== undefined ? (updated as any).stock_quantity : updated.stock,
+        // Backend có thể return stockQuantity hoặc trong data.stockQuantity
+        let stockValue = updates.stock;
+        if ((updated as any).stockQuantity !== undefined) {
+          stockValue = (updated as any).stockQuantity;
+        } else if ((updated as any).data?.stockQuantity !== undefined) {
+          stockValue = (updated as any).data.stockQuantity;
+        } else if ((updated as any).stock_quantity !== undefined) {
+          stockValue = (updated as any).stock_quantity;
+        } else if (updated.stock !== undefined) {
+          stockValue = updated.stock;
+        }
+        console.log('📊 Stock value extracted:', stockValue);
+        
+        const mappedUpdates: Partial<Product> = {
+          stock: stockValue,
         };
+        
+        if (categoryToStore !== undefined) {
+          mappedUpdates.category = categoryToStore;
+        }
+        
+        // Copy other fields from updates
+        if (updates.name !== undefined) mappedUpdates.name = updates.name;
+        if (updates.price !== undefined) mappedUpdates.price = updates.price;
+        if (updates.image !== undefined) mappedUpdates.image = updates.image;
+        if (updates.description !== undefined) mappedUpdates.description = updates.description;
+        
         console.log('✅ Mapped updates:', mappedUpdates);
-        setProducts(products.map(p => (p.id === id ? { ...p, ...mappedUpdates } : p)));
+        setProducts(prevProducts => prevProducts.map(p => (p.id === id ? { ...p, ...mappedUpdates } : p)));
+        
+        // Update category counts if category changed
+        console.log('🔍 Category change check - Old:', oldCategoryId || oldCategoryName, 'New:', newCategoryId || newCategoryName);
+        
+        if ((newCategoryId || newCategoryName) && (newCategoryId !== oldCategoryId || newCategoryName !== oldCategoryName)) {
+          setCategories(prevCategories =>
+            prevCategories.map(cat => {
+              let updated = cat;
+              // Decrease old category count
+              if (cat.id === oldCategoryId || cat.name === oldCategoryName) {
+                updated = { ...updated, productCount: Math.max(0, (updated.productCount || 0) - 1) };
+                console.log(`📉 Decreased old category "${cat.name}" count to`, updated.productCount);
+              }
+              // Increase new category count
+              if (cat.id === newCategoryId || cat.name === newCategoryName) {
+                updated = { ...updated, productCount: (updated.productCount || 0) + 1 };
+                console.log(`📈 Increased new category "${cat.name}" count to`, updated.productCount);
+              }
+              return updated;
+            })
+          );
+        }
+        
         Alert.alert('Thành công', 'Cập nhật sản phẩm thành công');
       }
     } catch (error: any) {
@@ -401,9 +532,24 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
   const deleteProduct = async (id: string) => {
     try {
+      // Get the product being deleted to know which category to update
+      const deletedProduct = products.find(p => p.id === id);
       const success = await productService.deleteProduct(id);
       if (success) {
         setProducts(products.filter(p => p.id !== id));
+        
+        // Update productCount của category
+        if (deletedProduct) {
+          const categoryId = (deletedProduct.category as any)?.id || (typeof deletedProduct.category === 'string' ? deletedProduct.category : '');
+          const categoryName = typeof deletedProduct.category === 'string' ? deletedProduct.category : deletedProduct.category?.name;
+          setCategories(prevCategories =>
+            prevCategories.map(cat =>
+              cat.id === categoryId || cat.name === categoryName
+                ? { ...cat, productCount: Math.max(0, (cat.productCount || 0) - 1) }
+                : cat
+            )
+          );
+        }
       }
     } catch (error) {
       console.error('Error deleting product:', error);

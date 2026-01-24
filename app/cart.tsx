@@ -2,12 +2,43 @@ import { Colors } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { apiService } from '@/services/api.service';
 
 export default function CartScreen() {
   const router = useRouter();
   const { cartItems, removeFromCart, updateQuantity, getTotalPrice, clearCart } = useCart();
+  const [userToken, setUserToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Kiểm tra đăng nhập khi vào trang
+  useEffect(() => {
+    checkUserLogin();
+  }, []);
+
+  const checkUserLogin = async () => {
+    try {
+      const token = await apiService.getToken();
+      setUserToken(token);
+      
+      if (!token) {
+        // Nếu chưa đăng nhập, hiển thị alert và chuyển hướng
+        Alert.alert(
+          'Yêu cầu đăng nhập',
+          'Bạn cần đăng nhập để xem giỏ hàng',
+          [
+            {
+              text: 'Đi đến đăng nhập',
+              onPress: () => router.push('/login'),
+            },
+          ]
+        );
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -24,6 +55,19 @@ export default function CartScreen() {
     // Chuyển sang trang thanh toán
     router.push('/checkout');
   };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text>Đang tải...</Text>
+      </View>
+    );
+  }
+
+  // Nếu chưa đăng nhập, không hiển thị gì (alert đã được show)
+  if (!userToken) {
+    return null;
+  }
 
   if (cartItems.length === 0) {
     return (

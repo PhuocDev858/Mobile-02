@@ -78,15 +78,30 @@ class AuthService {
    * Đăng ký
    */
   async signup(data: SignupRequest) {
-    return apiService.post<LoginResponse>('/auth/signup', {
+    const payload = {
       fullName: data.fullName,
       username: data.username,
       email: data.email,
       password: data.password,
       confirmPassword: data.confirmPassword,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
+    };
+    console.log('📤 Signup Request:', JSON.stringify(payload, null, 2));
+    const response = await apiService.post<LoginResponse>('/auth/signup', payload, {}, true);
+    console.log('📥 Signup Response:', response);
+
+    // ✅ Signup backend không trả token, cần tự login sau đó
+    if (response.data?.data?.email) {
+      console.log('Signup success, auto logging in...');
+      // Tự động login bằng email/password vừa đăng ký
+      const loginResponse = await this.login({
+        email: data.email,
+        password: data.password,
+      });
+      console.log('Auto login response:', loginResponse);
+      return loginResponse;
+    }
+
+    return response;
   }
 
   /**

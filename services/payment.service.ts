@@ -63,43 +63,13 @@ class PaymentService {
   getPaymentMethods(): PaymentMethod[] {
     return [
       {
-        id: 'vietcombank',
-        name: 'Vietcombank',
+        id: 'hdbank',
+        name: 'HD Bank',
         type: 'bank_transfer',
         icon: '🏦',
-        bankCode: 'VCB',
+        bankCode: 'HDB',
         accountNumber: '1234567890',
         accountName: 'CONG TY TNHH TECH STORE',
-      },
-      {
-        id: 'techcombank',
-        name: 'Techcombank',
-        type: 'bank_transfer',
-        icon: '🏦',
-        bankCode: 'TCB',
-        accountNumber: '0987654321',
-        accountName: 'CONG TY TNHH TECH STORE',
-      },
-      {
-        id: 'mbbank',
-        name: 'MB Bank',
-        type: 'bank_transfer',
-        icon: '🏦',
-        bankCode: 'MB',
-        accountNumber: '808080190705',
-        accountName: 'CONG TY TNHH TECH STORE',
-      },
-      {
-        id: 'momo',
-        name: 'Ví MoMo',
-        type: 'e_wallet',
-        icon: '💳',
-      },
-      {
-        id: 'zalopay',
-        name: 'ZaloPay',
-        type: 'e_wallet',
-        icon: '💳',
       },
       {
         id: 'cod',
